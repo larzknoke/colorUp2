@@ -15,19 +15,24 @@ import {
   Alert,
   AlertIcon,
   AlertDescription,
+  useToast,
 } from "@chakra-ui/react";
 import { uploadFromBlobAsync } from "../lib/firebase";
 import { FaCloudUploadAlt } from "react-icons/fa";
 import { addDoc, collection } from "firebase/firestore";
 import { db } from "../lib/firebase";
+import { useAuth } from "../context/AuthContext";
+import useUploads from "../lib/useUploads";
 
 export default function UploadForm() {
+  const { mutate } = useUploads();
+  const { user } = useAuth();
+  const toast = useToast();
   const [selectedFile, setSelectedFile] = useState();
   const [orderId, setOrderId] = useState("");
   const [note, setNote] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [message, setMessage] = useState(null);
 
   const inputRef = useRef(null);
   const dbUploads = collection(db, "uploads");
@@ -50,27 +55,33 @@ export default function UploadForm() {
 
     setIsLoading(true);
     setError(null);
-    setMessage(null);
 
     try {
       await uploadFromBlobAsync({
         blobUrl: URL.createObjectURL(selectedFile),
-        name: `${selectedFile.name}_${Date.now()}`,
-      }).then(async (url) => {
+        name: `${user.uid}/${Date.now()}/${selectedFile.name}`,
+      }).then(async ({ url, filePath }) => {
         const formData = {
+          userID: user.uid,
           orderId: orderId || "-",
           note: note || "-",
           fileUrl: url,
+          createdAt: Date.now(),
+          filePath: filePath,
         };
-        console.log("url", url);
         const docRef = await addDoc(dbUploads, formData);
-        console.log("docRef", docRef);
 
+        mutate();
         setNote("");
         setOrderId("");
         setSelectedFile(null);
-        setMessage("Datei erfolgreich hochgeladen 👍");
         setIsLoading(false);
+        toast({
+          title: "Datei erfolgreich hochgeladen 👍",
+          status: "success",
+          duration: 9000,
+          isClosable: true,
+        });
       });
     } catch (e) {
       setIsLoading(false);
@@ -141,7 +152,7 @@ export default function UploadForm() {
           </VStack>
         </HStack>
       </form>
-      {(error || message) && (
+      {error && (
         <Alert status={error ? "error" : "success"} borderRadius={5} my={2}>
           <AlertIcon />
           <AlertDescription>{error || message}</AlertDescription>

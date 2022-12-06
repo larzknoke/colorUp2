@@ -1,3 +1,4 @@
+import { useAuth } from "../context/AuthContext";
 import React from "react";
 import NextLink from "next/link";
 import {
@@ -24,6 +25,8 @@ import {
 } from "react-icons/fa";
 
 function HeaderContent() {
+  const { user, logout } = useAuth();
+
   return (
     <>
       <Flex w="100%" h="100%" align="center" justify="space-between">
@@ -87,11 +90,11 @@ function HeaderContent() {
                 leftIcon={<FaUserCircle />}
                 rightIcon={<FaChevronDown />}
               >
-                l.knoke@colorplus.de
+                {user?.email ? user.email : "-"}
               </MenuButton>
               <MenuList>
                 <MenuItem>Meine Uploads</MenuItem>
-                <MenuItem>Logout</MenuItem>
+                <MenuItem onClick={() => logout()}>Logout</MenuItem>
               </MenuList>
             </Menu>
           </HStack>
