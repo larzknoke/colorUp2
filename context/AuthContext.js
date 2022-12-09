@@ -22,11 +22,13 @@ export const AuthContextProvider = ({ children }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (authUser) => {
       if (authUser) {
-        authUser.getIdToken().then((token) => {
+        authUser.getIdToken(true).then(async (token) => {
+          const userTokenResult = await authUser.getIdTokenResult(true);
           setUser({
             uid: authUser.uid,
             email: authUser.email,
             displayName: authUser.displayName,
+            admin: userTokenResult.claims.admin ? true : false,
           });
           nookies.set(undefined, "token", token, { path: "/" });
         });
@@ -54,14 +56,17 @@ export const AuthContextProvider = ({ children }) => {
         }
       );
     } catch (error) {
-      console.log("signup error: ", error);
+      console.log("signup error: ", error.code);
       throw firebaseErrors[error.code] || error.code;
     }
   };
 
   const login = (email, password) => {
-    console.log("login");
-    return signInWithEmailAndPassword(auth, email, password);
+    try {
+      return signInWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+      throw firebaseErrors[error.code] || error.code;
+    }
   };
 
   const logout = async () => {

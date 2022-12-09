@@ -19,6 +19,7 @@ import {
   useToast,
 } from "@chakra-ui/react";
 import { FaUserAlt, FaLock } from "react-icons/fa";
+import { firebaseErrors } from "../lib/firebase";
 
 const CFaUserAlt = chakra(FaUserAlt);
 const CFaLock = chakra(FaLock);
@@ -32,7 +33,9 @@ const Login = () => {
   const [data, setData] = useState({
     email: "",
     password: "",
+    password_validate: "",
   });
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -42,24 +45,34 @@ const Login = () => {
 
   const handleShowClick = () => setShowPassword(!showPassword);
 
-  const handleLogin = async () => {
-    console.log("formdata: ", data);
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
     try {
       await login(data.email, data.password);
     } catch (error) {
-      console.log(error);
+      console.log("login error", error.code);
+      toast({
+        title: "Ein Fehler ist aufgetreten.",
+        description: firebaseErrors[error.code] || error.code,
+        status: "error",
+        duration: 6000,
+        isClosable: true,
+      });
     }
+    setLoading(false);
   };
 
-  const handleSignUp = async () => {
-    console.log("sign up");
+  const handleSignUp = async (e) => {
+    e.preventDefault();
+    setLoading(true);
     await signup(data.email, data.password)
       .then((data) => {
         toast({
           title: "Registrierung erfolgreich",
           description: `${data.email} erfolgreich registriert`,
           status: "success",
-          duration: 3000,
+          duration: 6000,
           isClosable: true,
         });
       })
@@ -68,10 +81,11 @@ const Login = () => {
           title: "Ein Fehler ist aufgetreten.",
           description: `${err}`,
           status: "error",
-          duration: 3000,
+          duration: 6000,
           isClosable: true,
         });
       });
+    setLoading(false);
   };
 
   return (
@@ -96,7 +110,7 @@ const Login = () => {
           height="6rem"
         />
         <Box bg="gray.800" minW={{ base: "90%", md: "468px" }}>
-          <form>
+          <form onSubmit={(e) => (doSignUp ? handleSignUp(e) : handleLogin(e))}>
             <Stack spacing={8} p={7} backgroundColor="gray.700" boxShadow="md">
               <FormControl>
                 <InputGroup>
@@ -107,7 +121,7 @@ const Login = () => {
                   <Input
                     name="email"
                     type="email"
-                    placeholder="email address"
+                    placeholder="Email"
                     onChange={(e) =>
                       setData({ ...data, email: e.target.value })
                     }
@@ -127,24 +141,67 @@ const Login = () => {
                       setData({ ...data, password: e.target.value })
                     }
                     type={showPassword ? "text" : "password"}
-                    placeholder="Password"
+                    placeholder="Passwort"
                   />
-                  <InputRightElement width="4.5rem">
-                    <Button h="1.75rem" size="sm" onClick={handleShowClick}>
-                      {showPassword ? "Hide" : "Show"}
+                  <InputRightElement width="auto">
+                    <Button
+                      h="1.75rem"
+                      size="sm"
+                      mr={1}
+                      onClick={handleShowClick}
+                    >
+                      {showPassword ? "Verstecken" : "Zeigen"}
                     </Button>
                   </InputRightElement>
                 </InputGroup>
-                <FormHelperText textAlign="right">
-                  <Link>forgot password?</Link>
-                </FormHelperText>
+                {!doSignUp && (
+                  <FormHelperText textAlign="right">
+                    <Link>Passwort vergessen?</Link>
+                  </FormHelperText>
+                )}
               </FormControl>
+              {doSignUp && (
+                <FormControl>
+                  <InputGroup>
+                    <InputLeftElement
+                      pointerEvents="none"
+                      color="gray.500"
+                      children={<CFaLock color="gray.500" />}
+                    />
+                    <Input
+                      name="password_validate"
+                      onChange={(e) =>
+                        setData({ ...data, password_validate: e.target.value })
+                      }
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Passwort wiederholen"
+                    />
+                    <InputRightElement width="auto">
+                      <Button
+                        h="1.75rem"
+                        size="sm"
+                        mr={1}
+                        onClick={handleShowClick}
+                      >
+                        {showPassword ? "Verstecken" : "Zeigen"}
+                      </Button>
+                    </InputRightElement>
+                  </InputGroup>
+                </FormControl>
+              )}
               <Button
                 variant="solid"
                 colorScheme="gray.700"
                 bg="gray.500"
+                _hover={{ bg: "gray.400" }}
                 width="full"
-                onClick={() => (doSignUp ? handleSignUp() : handleLogin())}
+                type="submit"
+                isLoading={loading}
+                disabled={
+                  data?.email == "" ||
+                  data?.password == "" ||
+                  (doSignUp && data?.password != data?.password_validate)
+                }
               >
                 {doSignUp ? "Registrieren" : "Login"}
               </Button>
@@ -153,10 +210,21 @@ const Login = () => {
         </Box>
       </Stack>
       <Box>
-        Neu hier?{" "}
-        <Link color="gray.500" onClick={() => setDoSignUp(true)}>
-          Registrieren
-        </Link>
+        {!doSignUp ? (
+          <>
+            Neu hier?{" "}
+            <Link color="gray.500" onClick={() => setDoSignUp(true)}>
+              Registrieren
+            </Link>
+          </>
+        ) : (
+          <>
+            Sie haben schon ein Konto?{" "}
+            <Link color="gray.500" onClick={() => setDoSignUp(false)}>
+              Login
+            </Link>
+          </>
+        )}
       </Box>
     </Flex>
   );

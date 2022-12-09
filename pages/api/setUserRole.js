@@ -8,7 +8,7 @@ export default async (req, res) => {
     if (user.email == "info@larsknoke.com") {
       adminAuth.setCustomUserClaims(uid, { admin: true });
     } else {
-      adminAuth.setCustomUserClaims(uid, { admin: true });
+      adminAuth.setCustomUserClaims(uid, { admin: false });
     }
     res.status(200).json(user);
   } catch (error) {

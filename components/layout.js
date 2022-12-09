@@ -1,5 +1,4 @@
 import Navbar from "./navbar";
-import Footer from "./footer";
 import { Container } from "@chakra-ui/react";
 import { useRouter } from "next/router";
 
@@ -13,7 +12,6 @@ export default function Layout({ children }) {
       <Container maxW="8xl" py={8}>
         {children}
       </Container>
-      {/* <Footer /> */}
     </>
   );
 }

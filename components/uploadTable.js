@@ -15,12 +15,14 @@ import {
 import { FaTrashAlt, FaDownload } from "react-icons/fa";
 import { useToast } from "@chakra-ui/react";
 import nookies from "nookies";
-import useUploads from "../lib/useUploads";
+import { useUploads } from "../lib/useUploads";
+import { useAdminUploads } from "../lib/useUploads";
 
-function LastUploads({ uploads, fetchUploads }) {
+function UploadTable({ uploads }) {
   const toast = useToast();
   const cookies = nookies.get();
   const { mutate } = useUploads();
+  const { mutate: adminMutate } = useAdminUploads();
 
   const handleDelete = (id) => {
     fetch(`api/uploads/${id}`, {
@@ -41,6 +43,7 @@ function LastUploads({ uploads, fetchUploads }) {
           });
         }
         mutate();
+        adminMutate();
         toast({
           title: "Upload gelöscht.",
           status: "success",
@@ -66,6 +69,7 @@ function LastUploads({ uploads, fetchUploads }) {
             <Th>Auftrags-Nr.</Th>
             <Th>Datum</Th>
             <Th>Notiz</Th>
+            <Th>Datei</Th>
             <Th></Th>
           </Tr>
         </Thead>
@@ -81,6 +85,7 @@ function LastUploads({ uploads, fetchUploads }) {
                     <Td>{upload.orderId}</Td>
                     <Td>{new Date(upload.createdAt).toLocaleDateString()}</Td>
                     <Td>{upload.note}</Td>
+                    <Td>{upload.fileName}</Td>
                     <Td>
                       <Tooltip
                         placement="top"
@@ -116,4 +121,4 @@ function LastUploads({ uploads, fetchUploads }) {
   );
 }
 
-export default LastUploads;
+export default UploadTable;

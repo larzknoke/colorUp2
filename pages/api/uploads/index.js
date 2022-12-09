@@ -3,10 +3,13 @@ import { firestore } from "../../../lib/firebase-admin";
 
 const handler = async (req, res) => {
   try {
-    const snapshot = await firestore
-      .collection("uploads")
-      .where("userID", "==", req.uid)
-      .get();
+    const snapshot =
+      req.admin && req.query.admin
+        ? await firestore.collection("uploads").get()
+        : await firestore
+            .collection("uploads")
+            .where("userID", "==", req.uid)
+            .get();
 
     const uploads = [];
 

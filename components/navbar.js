@@ -93,7 +93,11 @@ function HeaderContent() {
                 {user?.email ? user.email : "-"}
               </MenuButton>
               <MenuList>
-                <MenuItem>Meine Uploads</MenuItem>
+                {user?.admin && (
+                  <NextLink href="/admin" passHref>
+                    <MenuItem>Admin</MenuItem>
+                  </NextLink>
+                )}
                 <MenuItem onClick={() => logout()}>Logout</MenuItem>
               </MenuList>
             </Menu>

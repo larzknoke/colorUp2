@@ -22,7 +22,7 @@ import { FaCloudUploadAlt } from "react-icons/fa";
 import { addDoc, collection } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { useAuth } from "../context/AuthContext";
-import useUploads from "../lib/useUploads";
+import { useUploads } from "../lib/useUploads";
 
 export default function UploadForm() {
   const { mutate } = useUploads();
@@ -66,10 +66,31 @@ export default function UploadForm() {
           orderId: orderId || "-",
           note: note || "-",
           fileUrl: url,
-          createdAt: Date.now(),
           filePath: filePath,
+          fileName: selectedFile.name,
+          createdAt: Date.now(),
+          userEmail: user.email,
         };
         const docRef = await addDoc(dbUploads, formData);
+
+        const res = await fetch("/api/mailer", {
+          body: JSON.stringify({
+            subject: `Neuer Upload von ${formData.userEmail} | ${formData.fileName}`,
+            userEmail: formData.userEmail,
+            fileName: formData.fileName,
+            fileUrl: formData.fileUrl,
+            orderId: formData.orderId,
+            note: formData.note,
+          }),
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
+        });
+
+        const { error } = await res.json();
+        if (error) {
+          console.log("mailer err: ", error);
+          return;
+        }
 
         mutate();
         setNote("");
@@ -123,7 +144,12 @@ export default function UploadForm() {
           </Flex>{" "}
           <VStack w={"50%"} gap={5}>
             <FormControl>
-              <FormLabel htmlFor="orderId">Auftrags-Nr.</FormLabel>
+              <FormLabel htmlFor="orderId">
+                Auftrags-Nr.{" "}
+                <Text as="span" color="gray.600">
+                  (optional)
+                </Text>
+              </FormLabel>
               <Input
                 id="orderId"
                 name="orderId"
@@ -132,7 +158,12 @@ export default function UploadForm() {
               />
             </FormControl>
             <FormControl>
-              <FormLabel htmlFor="note">Notiz</FormLabel>
+              <FormLabel htmlFor="note">
+                Notiz{" "}
+                <Text as="span" color="gray.600">
+                  (optional)
+                </Text>
+              </FormLabel>
               <Textarea
                 value={note}
                 id="note"
