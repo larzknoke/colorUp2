@@ -1,4 +1,4 @@
-import { adminAuth } from "../../lib/firebase-admin";
+import { adminAuth } from "../../../lib/firebase-admin";
 
 export default async (req, res) => {
   try {

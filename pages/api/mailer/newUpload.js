@@ -2,12 +2,12 @@ import sendgrid from "@sendgrid/mail";
 
 sendgrid.setApiKey(process.env.SENDGRID_API_KEY);
 
-async function sendEmail(req, res) {
+async function newUpload(req, res) {
   try {
     console.log("Mailer REQ.BODY", req.body);
     await sendgrid.send({
       to: process.env.MAILTO, // Your email where you'll receive emails
-      from: "l.knoke@colorplus.de", // your website email address here
+      from: "vorstufe@colorplus.de", // your website email address here
       subject: `${req.body.subject}`,
       html: `<div>
             <p><strong>Neuer Upload:</strong></p>
@@ -31,4 +31,4 @@ async function sendEmail(req, res) {
   return res.status(200).json({ error: "" });
 }
 
-export default sendEmail;
+export default newUpload;

@@ -17,7 +17,7 @@ export const useAuth = () => useContext(AuthContext);
 
 export const AuthContextProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (authUser) => {
@@ -36,7 +36,7 @@ export const AuthContextProvider = ({ children }) => {
         setUser(null);
         nookies.set(undefined, "token", "", { path: "/" });
       }
-      setLoading(false);
+      setAuthLoading(false);
     });
 
     return () => unsubscribe();
@@ -48,7 +48,7 @@ export const AuthContextProvider = ({ children }) => {
         async (cred) => {
           const uid = cred.user.uid;
           console.log("cred: ", cred);
-          return fetch("api/setUserRole", {
+          return fetch("api/users/setUserRole", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ uid }),
@@ -56,7 +56,7 @@ export const AuthContextProvider = ({ children }) => {
         }
       );
     } catch (error) {
-      console.log("signup error: ", error.code);
+      console.log("signup error: ", error);
       throw firebaseErrors[error.code] || error.code;
     }
   };
@@ -93,9 +93,9 @@ export const AuthContextProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider
-      value={{ user, login, signup, logout, providerLogin }}
+      value={{ user, login, signup, logout, providerLogin, authLoading }}
     >
-      {loading ? null : children}
+      {authLoading ? null : children}
     </AuthContext.Provider>
   );
 };

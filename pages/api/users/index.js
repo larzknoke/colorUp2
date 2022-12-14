@@ -3,9 +3,7 @@ import { firestore, adminAuth } from "../../../lib/firebase-admin";
 
 const handler = async (req, res) => {
   try {
-    const users = await adminAuth.listUsers().then((res) => {
-      res.users.forEach((user) => console.log(user.toJSON()));
-    });
+    const users = await adminAuth.listUsers();
     return res.status(200).json(users);
   } catch (error) {
     console.log(error);

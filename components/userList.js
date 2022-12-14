@@ -3,7 +3,6 @@ import {
   Table,
   Thead,
   Tbody,
-  Tfoot,
   Tr,
   Th,
   Td,
@@ -11,10 +10,39 @@ import {
   Button,
   Icon,
   Tooltip,
+  useToast,
 } from "@chakra-ui/react";
-import { FaTrashAlt, FaDownload, FaCheck, FaCross } from "react-icons/fa";
+import { FaTrashAlt, FaCheck, FaUserAstronaut } from "react-icons/fa";
+import nookies from "nookies";
+import { useUsers } from "../lib/useUsers";
 
-function UserList({ users }) {
+function UserList() {
+  const { data: dataUsers, isError, mutate } = useUsers();
+  const toast = useToast();
+  const cookies = nookies.get();
+  const setAdmin = async (uid) => {
+    return fetch("api/users/setAdmin", {
+      method: "POST",
+      headers: new Headers({
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${cookies.token}`,
+      }),
+      credentials: "same-origin",
+      body: JSON.stringify({ uid }),
+    }).then((res) =>
+      res.json().then((data) => {
+        console.log(data);
+        mutate("/api/users");
+        toast({
+          title: "Admin gesetzt. 👍",
+          status: "success",
+          duration: 9000,
+          isClosable: true,
+        });
+      })
+    );
+  };
+
   return (
     <TableContainer>
       <Table variant="simple">
@@ -27,42 +55,30 @@ function UserList({ users }) {
           </Tr>
         </Thead>
         <Tbody>
-          {users?.length > 0 &&
-            users
-              //   .sort(function (a, b) {
-              //     return b.createdAt - a.createdAt;
-              //   })
+          {dataUsers?.length > 0 &&
+            dataUsers
+              .sort((a, b) => {
+                return a.email.localeCompare(b.email);
+              })
               .map((user) => {
                 return (
                   <Tr key={user.uid}>
                     <Td>{user.email}</Td>
                     <Td>{user.uid}</Td>
-                    <Td>{user.customClaims.admin && <Icon as={FaCheck} />}</Td>
+                    <Td>{user.customClaims?.admin && <Icon as={FaCheck} />}</Td>
                     <Td>
                       <Tooltip
                         placement="top"
-                        label="Benutzer löschen"
-                        aria-label="Delete Tooltip"
+                        label="zu Admin"
+                        aria-label="Admin Tooltip"
                       >
                         <Button
                           variant={"ghost"}
-                          //   onClick={() => handleDelete(upload.id)}
+                          onClick={() => setAdmin(user.uid)}
                         >
-                          <Icon as={FaTrashAlt} />
+                          <Icon as={FaUserAstronaut} />
                         </Button>
                       </Tooltip>
-                      {/* <Tooltip
-                        placement="top"
-                        label="Datei herunterladen"
-                        aria-label="Delete Tooltip"
-                      >
-                        <Button
-                          variant={"ghost"}
-                        //   onClick={() => getDownload(upload.fileUrl)}
-                        >
-                          <Icon as={FaDownload} />
-                        </Button>
-                      </Tooltip> */}
                     </Td>
                   </Tr>
                 );

@@ -73,7 +73,7 @@ export default function UploadForm() {
         };
         const docRef = await addDoc(dbUploads, formData);
 
-        const res = await fetch("/api/mailer", {
+        const res = await fetch("/api/mailer/newUpload", {
           body: JSON.stringify({
             subject: `Neuer Upload von ${formData.userEmail} | ${formData.fileName}`,
             userEmail: formData.userEmail,

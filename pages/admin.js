@@ -2,18 +2,51 @@ import React from "react";
 import ProtectedRoute from "../components/protectedRoute";
 import UploadTable from "../components/uploadTable";
 import { useAdminUploads, useUploads } from "../lib/useUploads";
-import { useUsers } from "../lib/useUsers";
 import grouper from "../utils/grouper";
-import { Heading } from "@chakra-ui/react";
-import { Tabs, TabList, TabPanels, Tab, TabPanel } from "@chakra-ui/react";
+import { filter, Heading } from "@chakra-ui/react";
+import {
+  Tabs,
+  TabList,
+  TabPanels,
+  Tab,
+  TabPanel,
+  Input,
+} from "@chakra-ui/react";
 import UserList from "../components/userList";
+import { useState, useEffect } from "react";
 
 function Admin() {
   const { data: dataUploads } = useAdminUploads();
-  const { data: dataUsers } = useUsers();
+  const [groupedUploads, setGroupedUploads] = useState([]);
+  const [filteredUploads, setFilteredUploads] = useState([]);
+  const [query, setQuery] = useState("");
 
-  if (dataUploads)
-    var groupedUploads = grouper(dataUploads?.uploads, (v) => v.userEmail);
+  useEffect(() => {
+    if (dataUploads) {
+      const uploadsArray = Object.entries(
+        grouper(dataUploads?.uploads, (v) => v.userEmail)
+      );
+      setGroupedUploads(uploadsArray);
+      filterUploads();
+    }
+  }, [dataUploads, query]);
+
+  const filterUploads = () => {
+    const filteredResult = Object.values(dataUploads.uploads).filter(
+      (upload) => {
+        return Object.keys(upload).some((k) => {
+          return upload[k]
+            .toString()
+            .toLowerCase()
+            .includes(query.toLowerCase());
+        });
+      }
+    );
+    const groupedResult = Object.entries(
+      grouper(filteredResult, (v) => v.userEmail)
+    );
+    setFilteredUploads(groupedResult);
+  };
 
   return (
     <ProtectedRoute>
@@ -25,8 +58,16 @@ function Admin() {
 
         <TabPanels>
           <TabPanel>
-            {dataUploads &&
-              Object.entries(groupedUploads).map((k) => {
+            <Input
+              placeholder="Suche"
+              w={"33%"}
+              float="right"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            {(query != "" ? filteredUploads : groupedUploads)
+              .sort((a, b) => a[0].localeCompare(b[0]))
+              .map((k) => {
                 return (
                   <div key={k}>
                     <Heading size="md" mb={5} mt={12}>
@@ -37,7 +78,9 @@ function Admin() {
                 );
               })}
           </TabPanel>
-          <TabPanel>{dataUsers && <UserList users={dataUsers} />}</TabPanel>
+          <TabPanel>
+            <UserList />
+          </TabPanel>
         </TabPanels>
       </Tabs>
     </ProtectedRoute>
