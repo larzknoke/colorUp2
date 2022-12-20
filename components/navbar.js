@@ -23,9 +23,16 @@ import {
   FaUserCircle,
   FaChevronDown,
 } from "react-icons/fa";
+import {
+  useAuthUser,
+  withAuthUser,
+  withAuthUserTokenSSR,
+  AuthAction,
+} from "next-firebase-auth";
+import { logout } from "../lib/firebase";
 
 function HeaderContent() {
-  const { user, logout } = useAuth();
+  const AuthUser = useAuthUser();
 
   return (
     <>
@@ -56,10 +63,10 @@ function HeaderContent() {
                 leftIcon={<FaUserCircle />}
                 rightIcon={<FaChevronDown />}
               >
-                {user?.email ? user.email : "-"}
+                {AuthUser?.email ? AuthUser.email : "-"}
               </MenuButton>
               <MenuList>
-                {user?.admin && (
+                {AuthUser?.claims?.admin && (
                   <NextLink href="/admin" passHref>
                     <MenuItem>Admin</MenuItem>
                   </NextLink>
@@ -82,4 +89,4 @@ function Navbar() {
   );
 }
 
-export default Navbar;
+export default withAuthUser()(Navbar);

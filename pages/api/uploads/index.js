@@ -1,5 +1,9 @@
 import { withAuth } from "../../../lib/middlewares";
-import { firestore } from "../../../lib/firebase-admin";
+import { getFirestore } from "firebase-admin/firestore";
+import initAuth from "../../../lib/initAuth";
+
+initAuth();
+const firestore = getFirestore();
 
 const handler = async (req, res) => {
   try {
@@ -8,7 +12,7 @@ const handler = async (req, res) => {
         ? await firestore.collection("uploads").get()
         : await firestore
             .collection("uploads")
-            .where("userID", "==", req.uid)
+            .where("userID", "==", req.id)
             .get();
 
     const uploads = [];

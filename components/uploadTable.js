@@ -14,27 +14,22 @@ import {
 } from "@chakra-ui/react";
 import { FaTrashAlt, FaDownload } from "react-icons/fa";
 import { useToast } from "@chakra-ui/react";
-import nookies from "nookies";
-import { useUploads } from "../lib/useUploads";
-import { useAdminUploads } from "../lib/useUploads";
+import axios from "axios";
+import { useUploads, useAdminUploads } from "../lib/useUploads";
 
-function UploadTable({ uploads }) {
+function UploadTable(uploads) {
+  const uploadData = [...Object.values(uploads)][0];
   const toast = useToast();
-  const cookies = nookies.get();
   const { mutate } = useUploads();
   const { mutate: adminMutate } = useAdminUploads();
 
   const handleDelete = (id) => {
-    fetch(`api/uploads/${id}`, {
-      method: "DELETE",
-      headers: new Headers({
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${cookies.token}`,
-      }),
-      credentials: "same-origin",
-    })
+    axios
+      .delete(`api/uploads/${id}`, {
+        withCredentials: true,
+      })
       .then((res) => {
-        if (!res.ok) {
+        if (res.status != 200) {
           return toast({
             title: "Ein Fehler ist aufgetreten.",
             status: "error",
@@ -74,8 +69,8 @@ function UploadTable({ uploads }) {
           </Tr>
         </Thead>
         <Tbody>
-          {uploads?.length > 0 &&
-            uploads
+          {uploadData?.length > 0 &&
+            uploadData
               .sort(function (a, b) {
                 return b.createdAt - a.createdAt;
               })

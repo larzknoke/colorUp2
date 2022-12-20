@@ -1,15 +1,8 @@
-const fetcher = async (url, token) => {
-  const res = await fetch(url, {
-    method: "GET",
-    headers: new Headers({
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      token,
-    }),
-    credentials: "same-origin",
-  });
+import axios from "axios";
 
-  if (!res.ok) {
+const fetcher = async (url) => {
+  const res = await axios.get(url, { withCredentials: true });
+  if (res.status != 200) {
     const error = new Error("An error occurred while fetching the data.");
     // Attach extra info to the error object.
     error.info = await res.json();
@@ -18,7 +11,7 @@ const fetcher = async (url, token) => {
     // throw error would cause useSWR to retry, and it seems to fix the issue of firebase expired token
   }
 
-  return res.json();
+  return res.data;
 };
 
 export default fetcher;

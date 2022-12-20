@@ -49,41 +49,39 @@ function Admin() {
   };
 
   return (
-    <ProtectedRoute>
-      <Tabs>
-        <TabList>
-          <Tab>Uploads</Tab>
-          <Tab>Benutzer</Tab>
-        </TabList>
+    <Tabs>
+      <TabList>
+        <Tab>Uploads</Tab>
+        <Tab>Benutzer</Tab>
+      </TabList>
 
-        <TabPanels>
-          <TabPanel>
-            <Input
-              placeholder="Suche"
-              w={"33%"}
-              float="right"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-            {(query != "" ? filteredUploads : groupedUploads)
-              .sort((a, b) => a[0].localeCompare(b[0]))
-              .map((k) => {
-                return (
-                  <div key={k}>
-                    <Heading size="md" mb={5} mt={12}>
-                      {k[0]}
-                    </Heading>
-                    <UploadTable uploads={k[1]} admin={true} />
-                  </div>
-                );
-              })}
-          </TabPanel>
-          <TabPanel>
-            <UserList />
-          </TabPanel>
-        </TabPanels>
-      </Tabs>
-    </ProtectedRoute>
+      <TabPanels>
+        <TabPanel>
+          <Input
+            placeholder="Suche"
+            w={"33%"}
+            float="right"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          {(query != "" ? filteredUploads : groupedUploads)
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .map((k) => {
+              return (
+                <div key={k}>
+                  <Heading size="md" mb={5} mt={12}>
+                    {k[0]}
+                  </Heading>
+                  <UploadTable uploads={k[1]} admin={true} />
+                </div>
+              );
+            })}
+        </TabPanel>
+        <TabPanel>
+          <UserList />
+        </TabPanel>
+      </TabPanels>
+    </Tabs>
   );
 }
 
