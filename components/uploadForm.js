@@ -17,97 +17,81 @@ import {
   AlertDescription,
   useToast,
 } from "@chakra-ui/react";
-import { uploadFromBlobAsync } from "../lib/firebase";
 import { FaCloudUploadAlt } from "react-icons/fa";
-import { addDoc, collection } from "firebase/firestore";
-import { db } from "../lib/firebase";
-import { useAuth } from "../context/AuthContext";
 import { useUploads } from "../lib/useUploads";
+import { useAuthUser, withAuthUser } from "next-firebase-auth";
+import axios from "axios";
 
-export default function UploadForm() {
+function UploadForm() {
+  const AuthUser = useAuthUser();
   const { mutate } = useUploads();
-  const { user } = useAuth();
   const toast = useToast();
-  const [selectedFile, setSelectedFile] = useState();
+  const [selectedFile, setSelectedFile] = useState([]);
   const [orderId, setOrderId] = useState("");
   const [note, setNote] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const inputRef = useRef(null);
-  const dbUploads = collection(db, "uploads");
 
   const handleClick = () => {
     inputRef.current?.click();
   };
 
   const changeHandler = (event) => {
-    setSelectedFile(event.target.files[0]);
+    setSelectedFile(event.target.files);
   };
 
   const onSubmit = async (e) => {
     e.preventDefault();
 
-    if (!selectedFile) {
-      setError("Keine Datei ausgewählt.");
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
     try {
-      await uploadFromBlobAsync({
-        blobUrl: URL.createObjectURL(selectedFile),
-        name: `${user.uid}/${Date.now()}/${selectedFile.name}`,
-      }).then(async ({ url, filePath }) => {
-        const formData = {
-          userID: user.uid,
-          orderId: orderId || "-",
-          note: note || "-",
-          fileUrl: url,
-          filePath: filePath,
-          fileName: selectedFile.name,
-          createdAt: Date.now(),
-          userEmail: user.email,
-        };
-        const docRef = await addDoc(dbUploads, formData);
+      console.log("selectedFile: ", selectedFile);
+      if (selectedFile.length == 0) {
+        setError("Keine Datei ausgewählt.");
+        return;
+      }
 
-        const res = await fetch("/api/mailer/newUpload", {
-          body: JSON.stringify({
-            subject: `Neuer Upload von ${formData.userEmail} | ${formData.fileName}`,
-            userEmail: formData.userEmail,
-            fileName: formData.fileName,
-            fileUrl: formData.fileUrl,
-            orderId: formData.orderId,
-            note: formData.note,
-          }),
-          headers: { "Content-Type": "application/json" },
-          method: "POST",
-        });
+      setIsLoading(true);
+      setError(null);
 
-        const { error } = await res.json();
-        if (error) {
-          console.log("mailer err: ", error);
-          return;
-        }
+      const formData = new FormData();
+      formData.append("orderId", orderId);
+      formData.append("note", note);
+      [...selectedFile].map((file) => {
+        formData.append(file.name, file);
+      });
+      const fileUpload = await axios.post("api/uploads", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        withCredentials: true,
+      });
 
+      if (fileUpload.data.success) {
         mutate();
         setNote("");
         setOrderId("");
-        setSelectedFile(null);
+        setSelectedFile([]);
         setIsLoading(false);
+
         toast({
           title: "Datei erfolgreich hochgeladen 👍",
           status: "success",
           duration: 9000,
           isClosable: true,
         });
-      });
-    } catch (e) {
+      } else {
+        toast({
+          title: "Ein Fehler ist aufgetreten.",
+          status: "error",
+          duration: 9000,
+          isClosable: true,
+        });
+      }
+    } catch (error) {
       setIsLoading(false);
-      setError(e.message);
-      return;
+      setError(error.message);
     }
   };
 
@@ -131,7 +115,11 @@ export default function UploadForm() {
           >
             <Icon as={FaCloudUploadAlt} w={"80px"} h={"80px"} />
             <Text textAlign="center">
-              {selectedFile?.name || "Datei auswählen..."}
+              {Array.from(selectedFile).length > 0
+                ? Array.from(selectedFile)
+                    .map((upload) => upload.name)
+                    .join(", ")
+                : "Datei auswählen..."}
             </Text>
             <FormControl>
               <Input
@@ -139,6 +127,7 @@ export default function UploadForm() {
                 onChange={changeHandler}
                 ref={inputRef}
                 type="file"
+                multiple={true}
               />
             </FormControl>
           </Flex>{" "}
@@ -192,3 +181,5 @@ export default function UploadForm() {
     </VStack>
   );
 }
+
+export default withAuthUser()(UploadForm);

@@ -19,7 +19,9 @@ function Home({ uploads }) {
 
   return (
     <VStack gap={8} align="left">
-      <Flex>{/* <UploadForm /> */}</Flex>
+      <Flex>
+        <UploadForm />
+      </Flex>
       <Divider />
       <Box>
         <Heading size="md" mb={5}>
