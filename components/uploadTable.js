@@ -51,9 +51,34 @@ function UploadTable(uploads) {
       });
   };
 
-  const getDownload = (url) => {
-    console.log(url);
-    window.open(url);
+  const getDownload = (id) => {
+    axios
+      .get(`api/uploads/${id}`, {
+        withCredentials: false,
+        responseType: "blob",
+      })
+      .then((res) => {
+        if (res.status != 200) {
+          return toast({
+            title: "Ein Fehler ist aufgetreten.",
+            status: "error",
+            duration: 9000,
+            isClosable: true,
+          });
+        }
+        mutate();
+        adminMutate();
+        const url = res.data.signedUrl;
+        const file = window.URL.createObjectURL(
+          new Blob([res.data], { type: "application/zip" })
+        );
+        window.open(file);
+
+        console.log("res: ", res);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
   };
 
   return (
@@ -76,7 +101,7 @@ function UploadTable(uploads) {
               })
               .map((upload) => {
                 return (
-                  <Tr key={upload.id}>
+                  <Tr key={upload.id} data-group={upload.uploadGroup}>
                     <Td>{upload.orderId}</Td>
                     <Td>{new Date(upload.createdAt).toLocaleDateString()}</Td>
                     <Td>{upload.note}</Td>
@@ -101,7 +126,7 @@ function UploadTable(uploads) {
                       >
                         <Button
                           variant={"ghost"}
-                          onClick={() => getDownload(upload.fileUrl)}
+                          onClick={() => getDownload(upload.id)}
                         >
                           <Icon as={FaDownload} />
                         </Button>

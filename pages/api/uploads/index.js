@@ -3,8 +3,8 @@ import { getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 import initAuth from "../../../lib/initAuth";
 import formidable from "formidable";
-import { v4 as uuidv4, v6 as uuidv6 } from "uuid";
-import { doc } from "firebase/firestore";
+import { v4 as uuidv4 } from "uuid";
+const { readdirSync, rmSync } = require("fs");
 
 export const config = {
   api: { bodyParser: false },
@@ -55,9 +55,10 @@ const handler = async (req, res) => {
           .join("-");
         await bucket
           .upload(file.filepath, {
-            destination: `${req.userId}/${Date.now()}/${fileName}`,
+            destination: `${req.userId}/${uploadGroup}/${fileName}`,
           })
           .then(async (uploadRef) => {
+            readdirSync(".tmp").forEach((f) => rmSync(`${".tmp"}/${f}`)); // empty .tmp folder
             const fileUrl = uploadRef[0].metadata.mediaLink;
             const name = uploadRef[0].metadata.name;
             const docRef = await firestore.collection("uploads").add({

@@ -11,9 +11,17 @@ import {
   Tab,
   TabPanel,
   Input,
+  Accordion,
+  AccordionItem,
+  AccordionButton,
+  AccordionPanel,
+  AccordionIcon,
+  Box,
+  Text,
 } from "@chakra-ui/react";
 import UserList from "../components/userList";
 import { useState, useEffect } from "react";
+import _ from "underscore";
 
 function Admin() {
   const { data: dataUploads } = useAdminUploads();
@@ -23,10 +31,11 @@ function Admin() {
 
   useEffect(() => {
     if (dataUploads) {
-      const uploadsArray = Object.entries(
-        grouper(dataUploads?.uploads, (v) => v.userEmail)
-      );
-      setGroupedUploads(uploadsArray);
+      const group = _.groupByMulti(dataUploads?.uploads, [
+        "userEmail",
+        "uploadGroup",
+      ]);
+      setGroupedUploads(Object.entries(group));
       filterUploads();
     }
   }, [dataUploads, query]);
@@ -42,10 +51,8 @@ function Admin() {
         });
       }
     );
-    const groupedResult = Object.entries(
-      grouper(filteredResult, (v) => v.userEmail)
-    );
-    setFilteredUploads(groupedResult);
+    const group = _.groupByMulti(filteredResult, ["userEmail", "uploadGroup"]);
+    setFilteredUploads(Object.entries(group));
   };
 
   return (
@@ -65,14 +72,40 @@ function Admin() {
             onChange={(e) => setQuery(e.target.value)}
           />
           {(query != "" ? filteredUploads : groupedUploads)
-            .sort((a, b) => a[0].localeCompare(b[0]))
+            // .sort((a, b) => a[0].localeCompare(b[0]))
             .map((k) => {
               return (
                 <div key={k}>
                   <Heading size="md" mb={5} mt={12}>
                     {k[0]}
                   </Heading>
-                  <UploadTable uploads={k[1]} admin={true} />
+                  <Accordion allowToggle>
+                    {Object.entries(k[1]).map((gk) => {
+                      return (
+                        <div key={gk[0]} data-group={gk[0]}>
+                          <Heading size="sm">{/* {gk[0]} */}</Heading>
+                          <AccordionItem>
+                            <h2>
+                              <AccordionButton>
+                                <Box as="span" flex="1" textAlign="left">
+                                  {new Date(
+                                    gk[1][0].createdAt
+                                  ).toLocaleDateString()}{" "}
+                                  <Text as="span" color="gray.600">
+                                    :: {gk[1][0].orderId}
+                                  </Text>
+                                </Box>
+                                <AccordionIcon />
+                              </AccordionButton>
+                            </h2>
+                            <AccordionPanel pb={4}>
+                              <UploadTable uploads={gk[1]} admin={true} />
+                            </AccordionPanel>
+                          </AccordionItem>
+                        </div>
+                      );
+                    })}
+                  </Accordion>
                 </div>
               );
             })}
