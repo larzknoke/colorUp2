@@ -55,7 +55,6 @@ function UploadTable(uploads) {
     axios
       .get(`api/uploads/${id}`, {
         withCredentials: false,
-        responseType: "blob",
       })
       .then((res) => {
         if (res.status != 200) {
@@ -66,15 +65,7 @@ function UploadTable(uploads) {
             isClosable: true,
           });
         }
-        mutate();
-        adminMutate();
-        const url = res.data.signedUrl;
-        const file = window.URL.createObjectURL(
-          new Blob([res.data], { type: "application/zip" })
-        );
-        window.open(file);
-
-        console.log("res: ", res);
+        window.open(res.data.signedUrl);
       })
       .catch((error) => {
         console.log(error);

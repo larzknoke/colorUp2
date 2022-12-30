@@ -18,9 +18,8 @@ async function newUpload(req, res) {
             </table>
             <p>Email: ${req.body.userEmail}</p>
             <p>Auftrag: ${req.body.orderId}</p>
-            <p>Noitz: ${req.body.note}</p>
-            <p>Datei: <a href="${req.body.fileUrl}">${req.body.fileName}</a></p>
-            <p>Url: ${req.body.fileUrl}</p>
+            <p>Notiz: ${req.body.note}</p>
+            <p>Dateien: ${req.body.fileName}</p>
         </div>`,
     });
   } catch (error) {

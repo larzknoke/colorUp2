@@ -48,49 +48,59 @@ const handler = async (req, res) => {
       const filesArr = Object.values(files);
       const uploadGroup = uuidv4();
 
-      filesArr.map(async (file) => {
-        const fileName = file.originalFilename
-          .toLowerCase()
-          .split(" ")
-          .join("-");
-        await bucket
-          .upload(file.filepath, {
-            destination: `${req.userId}/${uploadGroup}/${fileName}`,
-          })
-          .then(async (uploadRef) => {
-            readdirSync(".tmp").forEach((f) => rmSync(`${".tmp"}/${f}`)); // empty .tmp folder
-            const fileUrl = uploadRef[0].metadata.mediaLink;
-            const name = uploadRef[0].metadata.name;
-            const docRef = await firestore.collection("uploads").add({
-              orderId: fields.orderId,
-              note: fields.note,
-              fileName: fileName,
-              filePath: name,
-              fileUrl: fileUrl,
-              userID: req.userId,
-              userEmail: req.userEmail,
-              createdAt: Date.now(),
-              uploadGroup: uploadGroup,
+      const uploads = await Promise.all(
+        filesArr.map(async (file) => {
+          const fileName = file.originalFilename
+            .toLowerCase()
+            .split(" ")
+            .join("-");
+          return await bucket
+            .upload(file.filepath, {
+              destination: `${req.userId}/${uploadGroup}/${fileName}`,
+            })
+            .then(async (uploadRef) => {
+              readdirSync(".tmp").forEach((f) => rmSync(`${".tmp"}/${f}`)); // empty .tmp folder
+              const fileUrl = uploadRef[0].metadata.mediaLink;
+              const name = uploadRef[0].metadata.name;
+              const docRef = await firestore.collection("uploads").add({
+                orderId: fields.orderId,
+                note: fields.note,
+                fileName: fileName,
+                filePath: name,
+                fileUrl: fileUrl,
+                userID: req.userId,
+                userEmail: req.userEmail,
+                createdAt: Date.now(),
+                uploadGroup: uploadGroup,
+              });
+              console.log("docRef: ", docRef.id);
+              if (!docRef.id)
+                return res
+                  .status(500)
+                  .json({ error: "Ein Fehler ist aufgetreten." });
+              // return uploadArr.push((await docRef.get()).data());
+              const doc = (await docRef.get()).data();
+              return Promise.resolve(doc);
+            })
+            .catch((err) => {
+              console.log(err);
+              return res.status(500).json({ success: false });
             });
-            console.log("docRef: ", docRef.id);
-            if (!docRef.id)
-              return res
-                .status(500)
-                .json({ error: "Ein Fehler ist aufgetreten." });
-            return res.status(200).json({ success: true, doc: docRef.id });
-          })
-          // .then(async (uploadRef) => {
-          //   const signedUrl = await uploadRef[0].getSignedUrl({
-          //     action: "read",
-          //     expires: Date.now() + 3600 * 1000 * 24, // 24h
-          //   });
-          //   console.log("signedUrl: ", signedUrl);
-          // })
-          .catch((err) => {
-            console.log(err);
-            return res.status(500).json({ success: false });
-          });
+        })
+      );
+      let host = req.headers.referer;
+      const resMail = await fetch(`${host}/api/mailer/newUpload`, {
+        body: JSON.stringify({
+          subject: `Neuer Upload von ${uploads[0].userEmail}`,
+          userEmail: uploads[0].userEmail,
+          orderId: uploads[0].orderId,
+          note: uploads[0].note,
+          fileName: uploads.map((u) => u.fileName).join(", "),
+        }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
       });
+      return res.status(200).json({ success: true, uploads: uploads });
     });
   }
 };

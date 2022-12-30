@@ -1,7 +1,7 @@
 import { withAuthUser, AuthAction } from "next-firebase-auth";
 import { useRouter } from "next/router";
 import { useAuth } from "../context/AuthContext";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Image,
   Flex,
@@ -29,7 +29,7 @@ import {
   Spinner,
 } from "@chakra-ui/react";
 import { FaUserAlt, FaLock } from "react-icons/fa";
-import { firebaseErrors, login } from "../lib/firebase";
+import { firebaseErrors, login, signup } from "../lib/firebase";
 
 const CFaUserAlt = chakra(FaUserAlt);
 const CFaLock = chakra(FaLock);
@@ -47,13 +47,6 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [emailForPassword, setEmailForPassword] = useState("");
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const { user, signup } = useAuth();
-
-  // useEffect(() => {
-  //   if (user) {
-  //     router.push("/");
-  //   }
-  // }, [user]);
 
   const handleShowClick = () => setShowPassword(!showPassword);
 

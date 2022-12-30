@@ -20,6 +20,7 @@ function UserList() {
   const { data: dataUsers, isError, mutate } = useUsers();
   const toast = useToast();
   const cookies = nookies.get();
+
   const setAdmin = async (uid) => {
     return fetch("api/users/setAdmin", {
       method: "POST",
@@ -31,8 +32,7 @@ function UserList() {
       body: JSON.stringify({ uid }),
     }).then((res) =>
       res.json().then((data) => {
-        console.log(data);
-        mutate("/api/users");
+        mutate();
         toast({
           title: "Admin gesetzt. 👍",
           status: "success",
@@ -58,6 +58,9 @@ function UserList() {
           {dataUsers?.length > 0 &&
             dataUsers
               .sort((a, b) => {
+                // console.log("dataUsers: ", dataUsers);
+                // console.log("userA: ", a);
+                // console.log("userB: ", b);
                 return a.email.localeCompare(b.email);
               })
               .map((user) => {
@@ -69,12 +72,13 @@ function UserList() {
                     <Td>
                       <Tooltip
                         placement="top"
-                        label="zu Admin"
+                        label="User zu Admin"
                         aria-label="Admin Tooltip"
                       >
                         <Button
                           variant={"ghost"}
                           onClick={() => setAdmin(user.uid)}
+                          disabled={user.customClaims?.admin}
                         >
                           <Icon as={FaUserAstronaut} />
                         </Button>

@@ -19,11 +19,10 @@ import {
 } from "@chakra-ui/react";
 import { FaCloudUploadAlt } from "react-icons/fa";
 import { useUploads } from "../lib/useUploads";
-import { useAuthUser, withAuthUser } from "next-firebase-auth";
+import { withAuthUser } from "next-firebase-auth";
 import axios from "axios";
 
 function UploadForm() {
-  const AuthUser = useAuthUser();
   const { mutate } = useUploads();
   const toast = useToast();
   const [selectedFile, setSelectedFile] = useState([]);
@@ -76,7 +75,7 @@ function UploadForm() {
         setIsLoading(false);
 
         toast({
-          title: "Datei erfolgreich hochgeladen 👍",
+          title: "Upload erfolgreich 👍",
           status: "success",
           duration: 9000,
           isClosable: true,
@@ -114,9 +113,21 @@ function UploadForm() {
             onClick={handleClick}
           >
             <Icon as={FaCloudUploadAlt} w={"80px"} h={"80px"} />
-            <Text textAlign="center">
+            <Text
+              textAlign="center"
+              maxWidth="250px"
+              maxHeight="150px"
+              overflow="hidden"
+              textOverflow="ellipsis"
+              sx={{
+                WebkitLineClamp: 4,
+                WebkitBoxOrient: "vertical",
+                display: "-webkit-inline-box",
+              }}
+            >
               {Array.from(selectedFile).length > 0
-                ? Array.from(selectedFile)
+                ? `${selectedFile.length} Dateien: ` +
+                  Array.from(selectedFile)
                     .map((upload) => upload.name)
                     .join(", ")
                 : "Datei auswählen..."}
@@ -133,17 +144,13 @@ function UploadForm() {
           </Flex>{" "}
           <VStack w={"50%"} gap={5}>
             <FormControl>
-              <FormLabel htmlFor="orderId">
-                Auftrags-Nr.{" "}
-                <Text as="span" color="gray.600">
-                  (optional)
-                </Text>
-              </FormLabel>
+              <FormLabel htmlFor="orderId">Name / Auftrags-Nr. </FormLabel>
               <Input
                 id="orderId"
                 name="orderId"
                 onChange={(e) => setOrderId(e.target.value)}
                 value={orderId}
+                required={true}
               />
             </FormControl>
             <FormControl>

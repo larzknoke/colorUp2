@@ -1,0 +1,44 @@
+{"users": [
+{
+  "localId": "BjfKiEnDsZLWHYss2HqATGh0mZtM",
+  "email": "th.stickel@colorplus.de",
+  "emailVerified": true,
+  "passwordHash": "cGFzc3dvcmQ=",
+  "salt": "1lGCzwfCDYK0Mw==",
+  "createdAt": "1672326955721",
+  "disabled": false,
+  "providerUserInfo": []
+},
+{
+  "localId": "GKa7m7rPJ2h2c3Rnif6O5H6F5fP2",
+  "email": "larz.knoke@gmail.com",
+  "emailVerified": false,
+  "passwordHash": "1XisGj9Wv6WLoNUy2TfTMpOOeggIVgLLqGYBa86f+UC+7916MeJSXkt5rMPy+6UsEudySh0ApAL+lg8EgMsmhA==",
+  "salt": "1lGCzwfCDYK0Mw==",
+  "lastSignedInAt": "1670590672869",
+  "createdAt": "1670590034217",
+  "customAttributes": "{\"admin\":true}",
+  "providerUserInfo": []
+},
+{
+  "localId": "YIg9Lo5NwdTLifRPwY8YyZHw9st1",
+  "email": "info@larsknoke.com",
+  "emailVerified": true,
+  "passwordHash": "mjlBfhVHdh+m8nOdVaHB+ctfz4XFcpij81+xZZbg4/E8piJ4aMcvG+cgPTy4qEQYbumRBZPoxWLRJvajk0GG7w==",
+  "salt": "T+vqSu05NZFPEg==",
+  "lastSignedInAt": "1672325593391",
+  "createdAt": "1668670874870",
+  "customAttributes": "{\"admin\":true}",
+  "providerUserInfo": []
+},
+{
+  "localId": "xaPc4voesvcqdOaq48nc3sBHmhq1",
+  "email": "l.knoke@colorplus.de",
+  "emailVerified": false,
+  "passwordHash": "MIlYfDjF1QtsUOVMLgfWaLRR5gmZ4DuKvrh+RC3DcWbA3gRRw4oYiGQ2pgP4Wm+sAXIWE6yuSVDAtDRZgPrE/Q==",
+  "salt": "4H3yflXoWnT3CQ==",
+  "lastSignedInAt": "1671701783545",
+  "createdAt": "1670830429548",
+  "customAttributes": "{\"admin\":true}",
+  "providerUserInfo": []
+}]}
