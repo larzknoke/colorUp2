@@ -20,7 +20,7 @@ export default async (req, res) => {
             subject: "Neues Passwort | COLOR+ Upload",
             html: `<div>
             <p><strong>Sie haben ein neues Passwort für den Daten-Upload bei COLOR+ angefordert:</strong></p>
-            <p>MIt dem folgendem Link können Sie das Passwort zurücksetzen:</p>
+            <p>Mit dem folgendem Link können Sie das Passwort zurücksetzen:</p>
             <a href="${link}">${link}</a>
         </div>`,
           });

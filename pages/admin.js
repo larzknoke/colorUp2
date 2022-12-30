@@ -19,6 +19,7 @@ import {
   Box,
   Text,
   Button,
+  useToast,
 } from "@chakra-ui/react";
 import UserList from "../components/userList";
 import { useState, useEffect } from "react";
@@ -29,6 +30,7 @@ function Admin() {
   const [groupedUploads, setGroupedUploads] = useState([]);
   const [filteredUploads, setFilteredUploads] = useState([]);
   const [query, setQuery] = useState("");
+  const toast = useToast();
 
   useEffect(() => {
     if (dataUploads) {
@@ -79,6 +81,37 @@ function Admin() {
       })
       .catch((error) => {
         console.log(error);
+      });
+  };
+
+  const userResetEmail = (e) => {
+    e.preventDefault();
+    axios
+      .get("api/mailer/userReset", { withCredentials: true })
+      .then((res) => {
+        if (res.status != 200) {
+          return toast({
+            title: "Ein Fehler ist aufgetreten.",
+            status: "error",
+            duration: 9000,
+            isClosable: true,
+          });
+        }
+        return toast({
+          title: "Reset Email wurde an alle Benutzer verschickt.",
+          status: "success",
+          duration: 9000,
+          isClosable: true,
+        });
+      })
+      .catch((error) => {
+        console.log(error);
+        return toast({
+          title: "Ein Fehler ist aufgetreten.",
+          status: "error",
+          duration: 9000,
+          isClosable: true,
+        });
       });
   };
 
@@ -153,6 +186,9 @@ function Admin() {
         </TabPanel>
         <TabPanel>
           <UserList />
+          <Button float={"right"} size="sm" my={3} onClick={userResetEmail}>
+            Benutzer Reset Email
+          </Button>
         </TabPanel>
       </TabPanels>
     </Tabs>
