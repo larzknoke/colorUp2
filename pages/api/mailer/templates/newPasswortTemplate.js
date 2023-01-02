@@ -9,7 +9,6 @@ export default function newPasswordTemplate(link) {
       html,
       body {
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        background-color: #1a202c;
         color: #232323;
       }
     </style>
@@ -66,7 +65,7 @@ export default function newPasswordTemplate(link) {
                     <td align="left" valign="top">
                       <div
                         style="
-                          background-color: #a0aec0;
+                          background-color: #d7dde5;
                           padding: 40px;
                           border-radius: 4px;
                         "
