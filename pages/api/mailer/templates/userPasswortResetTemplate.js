@@ -115,5 +115,5 @@ export default function userPasswortTemplate(link) {
   </body>
 </html>
 `;
-  return newPasswordTemplate;
+  return userPasswortTemplate;
 }
