@@ -1,6 +1,7 @@
 import sendgrid from "@sendgrid/mail";
 import { withAuth } from "../../../lib/middlewares";
 import { adminAuth } from "../../../lib/firebase-admin";
+import userPasswortTemplate from "./templates/userPasswortResetTemplate";
 
 sendgrid.setApiKey(process.env.SENDGRID_API_KEY);
 
@@ -15,15 +16,12 @@ async function userReset(req, res) {
         })
         .then(async (link) => {
           try {
+            const html = userPasswortTemplate(link);
             await sendgrid.send({
               to: user.email,
               from: "vorstufe@colorplus.de",
               subject: "Umstellung | Neues Passwort | COLOR+ Upload",
-              html: `<div>
-            <p><strong>Wir haben unser Upload-Tool neu aufgebaut. Aus Sicherheitsgründen muss deshalb für die vorhandenen Benutzer ein neues Passwort festgelegt werden.</strong></p>
-            <p>Hier zu können Sie die "Passwort vergessen" Funktion im <a href="${process.env.NEXT_PUBLIC_BASE_URL}">Login-Bereich</a> verwenden oder folgenden Link:</p>
-            <a href="${link}">${link}</a>
-        </div>`,
+              html: html,
             });
           } catch (error) {
             console.log("mail error: ", error);
