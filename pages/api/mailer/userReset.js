@@ -11,7 +11,7 @@ async function userReset(req, res) {
     userRes.users.map((user) => {
       adminAuth
         .generatePasswordResetLink(user.email, {
-          url: `http://${req.headers.host}`,
+          url: process.env.NEXT_PUBLIC_BASE_URL,
         })
         .then(async (link) => {
           try {
@@ -21,7 +21,7 @@ async function userReset(req, res) {
               subject: "Umstellung | Neues Passwort | COLOR+ Upload",
               html: `<div>
             <p><strong>Wir haben unser Upload-Tool neu aufgebaut. Aus Sicherheitsgründen muss deshalb für die vorhandenen Benutzer ein neues Passwort festgelegt werden.</strong></p>
-            <p>Hier zu können Sie die "Passwort vergessen" Funktion im <a href="http://${req.headers.host}">Login-Bereich</a> verwenden oder folgenden Link:</p>
+            <p>Hier zu können Sie die "Passwort vergessen" Funktion im <a href="${process.env.NEXT_PUBLIC_BASE_URL}">Login-Bereich</a> verwenden oder folgenden Link:</p>
             <a href="${link}">${link}</a>
         </div>`,
             });
