@@ -20,6 +20,14 @@ import {
   Text,
   Button,
   useToast,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalFooter,
+  ModalBody,
+  ModalCloseButton,
+  useDisclosure,
 } from "@chakra-ui/react";
 import UserList from "../components/userList";
 import { useState, useEffect } from "react";
@@ -31,6 +39,7 @@ function Admin() {
   const [filteredUploads, setFilteredUploads] = useState([]);
   const [query, setQuery] = useState("");
   const toast = useToast();
+  const { isOpen, onOpen, onClose } = useDisclosure();
 
   useEffect(() => {
     if (dataUploads) {
@@ -97,6 +106,7 @@ function Admin() {
             isClosable: true,
           });
         }
+        onClose();
         return toast({
           title: "Reset Email wurde an alle Benutzer verschickt.",
           status: "success",
@@ -186,9 +196,29 @@ function Admin() {
         </TabPanel>
         <TabPanel>
           <UserList />
-          <Button float={"right"} size="sm" my={3} onClick={userResetEmail}>
+          <Button float={"right"} size="sm" my={3} onClick={onOpen}>
             Benutzer Reset Email
           </Button>
+          <Modal isOpen={isOpen} onClose={onClose}>
+            <ModalOverlay />
+            <ModalContent>
+              <ModalHeader>Bestätigung</ModalHeader>
+              <ModalCloseButton />
+              <ModalBody>
+                Wollen Sie wirklich allen Benutzern eine Passwort-Reset-Email
+                schicken?
+              </ModalBody>
+
+              <ModalFooter>
+                <Button colorScheme="blue" mr={3} onClick={onClose} size="sm">
+                  Abbrechen
+                </Button>
+                <Button onClick={userResetEmail} colorScheme="red" size="sm">
+                  Abschicken
+                </Button>
+              </ModalFooter>
+            </ModalContent>
+          </Modal>
         </TabPanel>
       </TabPanels>
     </Tabs>

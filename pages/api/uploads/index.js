@@ -88,18 +88,20 @@ const handler = async (req, res) => {
             });
         })
       );
-      let host = req.headers.referer;
-      const resMail = await fetch(`${host}/api/mailer/newUpload`, {
-        body: JSON.stringify({
-          subject: `Neuer Upload von ${uploads[0].userEmail}`,
-          userEmail: uploads[0].userEmail,
-          orderId: uploads[0].orderId,
-          note: uploads[0].note,
-          fileName: uploads.map((u) => u.fileName).join(", "),
-        }),
-        headers: { "Content-Type": "application/json" },
-        method: "POST",
-      });
+      const resMail = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/mailer/newUpload`,
+        {
+          body: JSON.stringify({
+            subject: `Neuer Upload von ${uploads[0].userEmail}`,
+            userEmail: uploads[0].userEmail,
+            orderId: uploads[0].orderId,
+            note: uploads[0].note,
+            fileName: uploads.map((u) => u.fileName).join(", "),
+          }),
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
+        }
+      );
       return res.status(200).json({ success: true, uploads: uploads });
     });
   }

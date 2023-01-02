@@ -1,6 +1,7 @@
 import { adminAuth } from "../../../lib/firebase-admin";
 import sendgrid from "@sendgrid/mail";
 import validateEmail from "../../../utils/email-checker";
+import newPasswordTemplate from "../mailer/templates/newPasswortTemplate";
 
 sendgrid.setApiKey(process.env.SENDGRID_API_KEY);
 
@@ -10,19 +11,18 @@ export default async (req, res) => {
     if (!validateEmail(userEmail) || userEmail == "")
       return res.status(500).json({ error: "Bitte gültige Email eingeben." });
     adminAuth
-      .generatePasswordResetLink(userEmail, { url: "http://localhost:3000" })
+      .generatePasswordResetLink(userEmail, {
+        url: process.env.NEXT_PUBLIC_BASE_URL,
+      })
       .then(async (link) => {
         try {
           console.log("Mailer REQ.BODY", req.body);
+          const html = newPasswordTemplate(link);
           await sendgrid.send({
             to: req.body.emailForPassword,
             from: "vorstufe@colorplus.de",
             subject: "Neues Passwort | COLOR+ Upload",
-            html: `<div>
-            <p><strong>Sie haben ein neues Passwort für den Daten-Upload bei COLOR+ angefordert:</strong></p>
-            <p>Mit dem folgendem Link können Sie das Passwort zurücksetzen:</p>
-            <a href="${link}">${link}</a>
-        </div>`,
+            html: html,
           });
         } catch (error) {
           console.log("mail error: ", error);
