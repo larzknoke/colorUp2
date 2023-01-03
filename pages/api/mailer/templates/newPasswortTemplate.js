@@ -44,8 +44,7 @@ export default function newPasswordTemplate(link) {
                     <td align="center" valign="top">
                       <img
                         src="${process.env.NEXT_PUBLIC_BASE_URL}/upPlus_logo.png"
-                        width="180px"
-                        style="margin-top: 50px"
+                        style="margin-top: 50px; width: 180px"
                       />
                     </td>
                   </tr>
