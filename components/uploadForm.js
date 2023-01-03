@@ -16,6 +16,7 @@ import {
   AlertIcon,
   AlertDescription,
   useToast,
+  Progress,
 } from "@chakra-ui/react";
 import { FaCloudUploadAlt } from "react-icons/fa";
 import { useUploads } from "../lib/useUploads";
@@ -30,6 +31,7 @@ function UploadForm() {
   const [note, setNote] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [progress, setProgess] = useState(0);
 
   const inputRef = useRef(null);
 
@@ -65,6 +67,11 @@ function UploadForm() {
           "Content-Type": "multipart/form-data",
         },
         withCredentials: true,
+        onUploadProgress: function (progressEvent) {
+          setProgess(
+            Math.round((progressEvent.loaded * 100) / progressEvent.total)
+          );
+        },
       });
 
       if (fileUpload.data.success) {
@@ -73,6 +80,7 @@ function UploadForm() {
         setOrderId("");
         setSelectedFile([]);
         setIsLoading(false);
+        setProgess(0);
 
         toast({
           title: "Upload erfolgreich 👍",
@@ -179,6 +187,14 @@ function UploadForm() {
           </VStack>
         </HStack>
       </form>
+      {progress && (
+        <Progress
+          width={"100%"}
+          hasStripe
+          value={progress}
+          colorScheme={"teal"}
+        ></Progress>
+      )}
       {error && (
         <Alert status={error ? "error" : "success"} borderRadius={5} my={2}>
           <AlertIcon />
