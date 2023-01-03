@@ -1,6 +1,6 @@
 import { withAuth } from "../../../lib/middlewares";
-import { getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
+import { getFirestore } from "firebase-admin/firestore";
 import initAuth from "../../../lib/initAuth";
 import formidable from "formidable";
 import { v4 as uuidv4 } from "uuid";

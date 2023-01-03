@@ -28,6 +28,9 @@ import {
   ModalBody,
   ModalCloseButton,
   useDisclosure,
+  HStack,
+  Code,
+  VStack,
 } from "@chakra-ui/react";
 import UserList from "../components/userList";
 import { useState, useEffect } from "react";
@@ -38,8 +41,14 @@ function Admin() {
   const [groupedUploads, setGroupedUploads] = useState([]);
   const [filteredUploads, setFilteredUploads] = useState([]);
   const [query, setQuery] = useState("");
+  const [importFile, setImportFile] = useState(null);
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const {
+    isOpen: isImportOpen,
+    onOpen: onImportOpen,
+    onClose: onImportClose,
+  } = useDisclosure();
 
   useEffect(() => {
     if (dataUploads) {
@@ -125,6 +134,31 @@ function Admin() {
       });
   };
 
+  const importUser = async () => {
+    try {
+      const fileUpload = await axios.post("api/users/importUser", importFile, {
+        withCredentials: true,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      toast({
+        title: "Import erfolgreich",
+        status: "success",
+        duration: 9000,
+        isClosable: true,
+      });
+    } catch (success) {
+      toast({
+        title: error.response.data.error,
+        status: "error",
+        duration: 9000,
+        isClosable: true,
+      });
+      console.log("error", error.response.data.error);
+    }
+  };
+
   return (
     <Tabs>
       <TabList>
@@ -196,9 +230,14 @@ function Admin() {
         </TabPanel>
         <TabPanel>
           <UserList />
-          <Button float={"right"} size="sm" my={3} onClick={onOpen}>
-            Benutzer Reset Email
-          </Button>
+          <HStack spacing={4} float="right">
+            <Button size="sm" my={3} onClick={onOpen}>
+              Benutzer Reset Email
+            </Button>
+            <Button size="sm" my={3} onClick={onImportOpen}>
+              User Import
+            </Button>
+          </HStack>
           <Modal isOpen={isOpen} onClose={onClose}>
             <ModalOverlay />
             <ModalContent>
@@ -215,6 +254,44 @@ function Admin() {
                 </Button>
                 <Button onClick={userResetEmail} colorScheme="red" size="sm">
                   Abschicken
+                </Button>
+              </ModalFooter>
+            </ModalContent>
+          </Modal>
+          <Modal isOpen={isImportOpen} onClose={onImportClose} size={"xl"}>
+            <ModalOverlay />
+            <ModalContent>
+              <ModalHeader>Benutzer Import</ModalHeader>
+              <ModalCloseButton />
+              <ModalBody>
+                <VStack spacing={4} align={"left"}>
+                  <Text>
+                    Bitte Datei mit Benutzern auswählen und importieren.
+                  </Text>
+                  <Code>
+                    {JSON.stringify({
+                      users: [
+                        {
+                          email: "max@muster.de",
+                          password: "1234",
+                        },
+                      ],
+                    })}
+                  </Code>
+                  <input
+                    type="file"
+                    name="importFile"
+                    onChange={(e) => setImportFile(e.target.files[0])}
+                  />
+                </VStack>
+              </ModalBody>
+
+              <ModalFooter>
+                <Button mr={3} onClick={onImportClose} size="sm">
+                  Abbrechen
+                </Button>
+                <Button onClick={importUser} colorScheme="blue" size="sm">
+                  Importieren
                 </Button>
               </ModalFooter>
             </ModalContent>

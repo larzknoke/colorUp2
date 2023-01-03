@@ -1,11 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { auth, firebaseErrors } from "../lib/firebase";
 import nookies from "nookies";
-import {
-  createUserWithEmailAndPassword,
-  GoogleAuthProvider,
-  signInWithPopup,
-} from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
 const AuthContext = createContext({});
 const provider = new GoogleAuthProvider();
