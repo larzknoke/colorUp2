@@ -1,9 +1,10 @@
+import { withAuthUser, AuthAction } from "next-firebase-auth";
+import { Spinner } from "@chakra-ui/react";
 import React from "react";
 import axios from "axios";
 import UploadTable from "../components/uploadTable";
 import { useAdminUploads, useUploads } from "../lib/useUploads";
-import grouper from "../utils/grouper";
-import { filter, Heading } from "@chakra-ui/react";
+import { Heading } from "@chakra-ui/react";
 import {
   Tabs,
   TabList,
@@ -302,4 +303,8 @@ function Admin() {
   );
 }
 
-export default Admin;
+export default withAuthUser({
+  whenUnauthedAfterInit: AuthAction.REDIRECT_TO_LOGIN,
+  whenUnauthedBeforeInit: AuthAction.SHOW_LOADER,
+  LoaderComponent: Spinner,
+})(Admin);

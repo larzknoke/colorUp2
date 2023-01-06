@@ -37,6 +37,4 @@ export default withAuthUser({
   whenUnauthedAfterInit: AuthAction.REDIRECT_TO_LOGIN,
   whenUnauthedBeforeInit: AuthAction.SHOW_LOADER,
   LoaderComponent: Spinner,
-  // whenUnauthedAfterInit: AuthAction.RENDER,
-  // authPageURL: "/my-login-page/",
 })(Home);
