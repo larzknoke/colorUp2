@@ -1,3 +1,4 @@
+import { bucket } from "../../../lib/firebase-admin";
 import { withAuth } from "../../../lib/middlewares";
 import { getStorage } from "firebase-admin/storage";
 import { getFirestore } from "firebase-admin/firestore";
@@ -104,6 +105,23 @@ const handler = async (req, res) => {
       );
       return res.status(200).json({ success: true, uploads: uploads });
     });
+  }
+  if (req.method == "DELETE") {
+    const groupIds = req.query.groupids.split(",");
+    console.log("groupIds: ", groupIds);
+
+    const snapshot = await firestore
+      .collection("uploads")
+      .where("uploadGroup", "in", groupIds)
+      .get();
+
+    snapshot.forEach(async (doc) => {
+      console.log("doc: ", doc.id, doc.data().filePath);
+      // const filePath = doc.data().filePath;
+      // await bucket.file(filePath).delete();
+      await doc.ref.delete();
+    });
+    return res.status(200).json({ success: true });
   }
 };
 

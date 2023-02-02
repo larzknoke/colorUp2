@@ -1,5 +1,5 @@
 import { withAuthUser, AuthAction } from "next-firebase-auth";
-import { Spinner } from "@chakra-ui/react";
+import { IconButton, Spinner } from "@chakra-ui/react";
 import React from "react";
 import axios from "axios";
 import grouper from "../utils/grouper";
@@ -33,15 +33,22 @@ import {
   HStack,
   Code,
   VStack,
+  Checkbox,
+  CheckboxGroup,
+  Tooltip,
 } from "@chakra-ui/react";
+import { DeleteIcon } from "@chakra-ui/icons";
+
 import UserList from "../components/userList";
 import { useState, useEffect } from "react";
 import _ from "underscore";
+import GroupDownloadButton from "../components/groupDownload";
 
 function Admin() {
-  const { data: dataUploads } = useAdminUploads();
+  const { data: dataUploads, mutate: uploadMutate } = useAdminUploads();
   const [groupedUploads, setGroupedUploads] = useState([]);
   const [filteredUploads, setFilteredUploads] = useState([]);
+  const [deleteGroup, setDeleteGroup] = useState([]);
   const [query, setQuery] = useState("");
   const [importFile, setImportFile] = useState(null);
   const toast = useToast();
@@ -76,32 +83,6 @@ function Admin() {
     );
     const group = _.groupByMulti(filteredResult, ["userEmail", "uploadGroup"]);
     setFilteredUploads(Object.entries(group));
-  };
-
-  const getDownloadGroup = (e, id) => {
-    e.preventDefault();
-    axios
-      .get(`api/uploads/${id}?isGroup=true`, {
-        withCredentials: false,
-        responseType: "blob",
-      })
-      .then((res) => {
-        if (res.status != 200) {
-          return toast({
-            title: "Ein Fehler ist aufgetreten.",
-            status: "error",
-            duration: 9000,
-            isClosable: true,
-          });
-        }
-        const file = window.URL.createObjectURL(
-          new Blob([res.data], { type: "application/zip" })
-        );
-        window.open(file);
-      })
-      .catch((error) => {
-        console.log(error);
-      });
   };
 
   const userResetEmail = (e) => {
@@ -161,6 +142,43 @@ function Admin() {
     }
   };
 
+  const handleCheckbox = (e) => {
+    if (e.target.checked === true) {
+      setDeleteGroup([...deleteGroup, e.target.value]);
+    } else if (e.target.checked === false) {
+      let freshArray = deleteGroup.filter((val) => val !== e.target.value);
+      setDeleteGroup([...freshArray]);
+    }
+  };
+
+  const handleDeleteGroup = () => {
+    axios
+      .delete(`api/uploads?groupids=${deleteGroup.join(",")}`)
+      .then((data) => {
+        toast({
+          title: "Uploads gelöscht.",
+          status: "success",
+          duration: 9000,
+          isClosable: true,
+        });
+        uploadMutate();
+        setDeleteGroup([]);
+      })
+      .catch((error) => {
+        toast({
+          title: "Ein Fehler ist aufgetreten.",
+          status: "error",
+          duration: 9000,
+          isClosable: true,
+        });
+        console.log("deleteError: ", error);
+      });
+  };
+
+  useEffect(() => {
+    console.log("deleteGroup: ", deleteGroup);
+  }, [deleteGroup]);
+
   return (
     <Tabs>
       <TabList>
@@ -170,6 +188,22 @@ function Admin() {
 
       <TabPanels>
         <TabPanel>
+          {deleteGroup.length > 0 && (
+            <Tooltip
+              placement="top"
+              label="Markierte löschen"
+              aria-label="Delete Tooltip"
+            >
+              <IconButton
+                icon={<DeleteIcon />}
+                colorScheme="red"
+                size={"md"}
+                float="right"
+                ml={5}
+                onClick={handleDeleteGroup}
+              />
+            </Tooltip>
+          )}
           <Input
             placeholder="Suche"
             w={"33%"}
@@ -200,17 +234,15 @@ function Admin() {
                                   ).toLocaleDateString()}
                                 </Text>
                               </Box>
-                              <Button
-                                as="span"
-                                colorScheme="teal"
-                                size="xs"
+                              <GroupDownloadButton id={gk[1][0].id} />
+                              <Checkbox
+                                value={gk[0]}
+                                isChecked={deleteGroup.includes(gk[0])}
+                                onChange={handleCheckbox}
                                 mr={3}
-                                onClick={(e) =>
-                                  getDownloadGroup(e, gk[1][0].id)
-                                }
-                              >
-                                Download
-                              </Button>
+                                defaultChecked
+                                colorScheme="teal"
+                              ></Checkbox>
                               <AccordionIcon />
                             </AccordionButton>
                             <AccordionPanel

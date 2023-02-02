@@ -95,7 +95,9 @@ function UploadTable(uploads) {
                   <Tr key={upload.id} data-group={upload.uploadGroup}>
                     <Td>{upload.orderId}</Td>
                     <Td>{new Date(upload.createdAt).toLocaleDateString()}</Td>
-                    <Td>{upload.note}</Td>
+                    <Td maxWidth={"500px"} whiteSpace={"normal"}>
+                      {upload.note}
+                    </Td>
                     <Td>{upload.fileName}</Td>
                     <Td>
                       <Tooltip
