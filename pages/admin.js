@@ -179,6 +179,28 @@ function Admin() {
     console.log("deleteGroup: ", deleteGroup);
   }, [deleteGroup]);
 
+  const getDownload = (e, id) => {
+    e.preventDefault();
+    axios
+      .get(`api/uploads/${id}`, {
+        withCredentials: false,
+      })
+      .then((res) => {
+        if (res.status != 200) {
+          return toast({
+            title: "Ein Fehler ist aufgetreten.",
+            status: "error",
+            duration: 9000,
+            isClosable: true,
+          });
+        }
+        window.open(res.data.signedUrl);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  };
+
   return (
     <Tabs>
       <TabList>
@@ -234,7 +256,19 @@ function Admin() {
                                   ).toLocaleDateString()}
                                 </Text>
                               </Box>
-                              <GroupDownloadButton id={gk[1][0].id} />
+                              {gk[1].length > 1 ? (
+                                <GroupDownloadButton id={gk[1][0].id} />
+                              ) : (
+                                <Button
+                                  as="span"
+                                  colorScheme="teal"
+                                  size="xs"
+                                  mr={3}
+                                  onClick={(e) => getDownload(e, gk[1][0].id)}
+                                >
+                                  Download
+                                </Button>
+                              )}
                               <Checkbox
                                 value={gk[0]}
                                 isChecked={deleteGroup.includes(gk[0])}
