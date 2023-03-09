@@ -97,8 +97,9 @@ function UploadForm() {
         });
       }
     } catch (error) {
+      console.log("error: ", error);
       setIsLoading(false);
-      setError(error.message);
+      setError(error.response.data.message || error.message);
     }
   };
 

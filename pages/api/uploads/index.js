@@ -42,6 +42,13 @@ const handler = async (req, res) => {
       uploadDir: "./.tmp",
       keepExtensions: true,
       multiples: true,
+      maxFileSize: 500 * 1024 * 1024,
+    });
+    form.on("error", (err) => {
+      console.log(err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Datei ist ungültig." });
     });
 
     form.parse(req, async (err, fields, files) => {
@@ -89,20 +96,22 @@ const handler = async (req, res) => {
             });
         })
       );
-      const resMail = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/api/mailer/newUpload`,
-        {
-          body: JSON.stringify({
-            subject: `Neuer Upload von ${uploads[0].userEmail}`,
-            userEmail: uploads[0].userEmail,
-            orderId: uploads[0].orderId,
-            note: uploads[0].note,
-            fileName: uploads.map((u) => u.fileName).join(", "),
-          }),
-          headers: { "Content-Type": "application/json" },
-          method: "POST",
-        }
-      );
+      if (uploads.length > 0) {
+        const resMail = await fetch(
+          `${process.env.NEXT_PUBLIC_BASE_URL}/api/mailer/newUpload`,
+          {
+            body: JSON.stringify({
+              subject: `Neuer Upload von ${uploads[0].userEmail}`,
+              userEmail: uploads[0].userEmail,
+              orderId: uploads[0].orderId,
+              note: uploads[0].note,
+              fileName: uploads.map((u) => u.fileName).join(", "),
+            }),
+            headers: { "Content-Type": "application/json" },
+            method: "POST",
+          }
+        );
+      }
       return res.status(200).json({ success: true, uploads: uploads });
     });
   }
