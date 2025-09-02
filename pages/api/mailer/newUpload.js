@@ -1,13 +1,14 @@
 import sendgrid from "@sendgrid/mail";
+import { sendEmail } from "../../../lib/email";
 
 sendgrid.setApiKey(process.env.SENDGRID_API_KEY);
 
 async function newUpload(req, res) {
   try {
     console.log("Mailer REQ.BODY", req.body);
-    await sendgrid.send({
-      to: process.env.MAILTO, // Your email where you'll receive emails
-      from: "vorstufe@colorplus.de", // your website email address here
+    await sendEmail({
+      to: process.env.MAILTO,
+      // from: "vorstufe@colorplus.de",
       subject: `${req.body.subject}`,
       html: `<div>
             <p><strong>Neuer Upload:</strong></p>
