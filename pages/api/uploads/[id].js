@@ -1,7 +1,18 @@
 import { withAuth } from "../../../lib/middlewares";
-import { firestore, storage, bucket } from "../../../lib/firebase-admin";
+import { firestore } from "../../../lib/firebase-admin";
 import JSZip from "jszip";
-import fs from "fs";
+import {
+  createUploadReadStream,
+  deleteUploadFile,
+  readUploadFile,
+} from "../../../lib/local-upload-storage";
+
+const pipeStream = (stream, res) =>
+  new Promise((resolve, reject) => {
+    stream.on("error", reject);
+    res.on("finish", resolve);
+    stream.pipe(res);
+  });
 
 const handler = async (req, res) => {
   const { id, isGroup } = req.query;
@@ -10,8 +21,8 @@ const handler = async (req, res) => {
   if (req.method === "DELETE" && docRef) {
     try {
       const filePath = (await docRef.get()).data().filePath;
-      const delFile = await bucket.file(filePath).delete();
-      const delDoc = await docRef.delete();
+      await deleteUploadFile(filePath);
+      await docRef.delete();
       return res.status(200).json({ success: true });
     } catch (error) {
       return res.status(500).json({ error: error.message });
@@ -21,46 +32,52 @@ const handler = async (req, res) => {
   if (req.method === "GET" && docRef) {
     try {
       const fileData = (await docRef.get()).data();
-      const { filePath, userID, uploadGroup } = fileData;
+      const { filePath, uploadGroup, fileName, userID } = fileData;
 
       if (isGroup) {
         const jszip = new JSZip();
-        const files = (
-          await bucket.getFiles({
-            prefix: `${userID}/${uploadGroup}`,
-          })
-        )[0];
+        const snapshot = await firestore
+          .collection("uploads")
+          .where("userID", "==", userID)
+          .where("uploadGroup", "==", uploadGroup)
+          .get();
 
-        const filesContent = await Promise.all(
-          files.map((file) => file.download())
+        const files = await Promise.all(
+          snapshot.docs.map(async (uploadDoc) => {
+            const upload = uploadDoc.data();
+            const content = await readUploadFile(upload.filePath);
+            return {
+              content,
+              fileName: upload.fileName,
+            };
+          }),
         );
 
-        filesContent.forEach((content, i) => {
-          jszip.file(files[i].name, content[0]);
+        files.forEach((file) => {
+          jszip.file(file.fileName, file.content);
         });
 
         const content = await jszip.generateAsync({ type: "nodebuffer" });
-        const zipFile = await fs.promises.writeFile(
-          "./.tmp/download.zip",
-          content,
-          { encoding: "utf8" }
-        );
-
-        const downloadFile = fs.createReadStream(".tmp/download.zip");
 
         return res
           .status(200)
           .setHeader("Content-Type", "application/zip")
-          .setHeader("Content-Disposition", `attachment; filename=download.zip`)
-          .send(downloadFile);
+          .setHeader(
+            "Content-Disposition",
+            `attachment; filename=${uploadGroup}.zip`,
+          )
+          .send(content);
       } else {
-        const signedUrl = await bucket.file(filePath).getSignedUrl({
-          version: "v4",
-          action: "read",
-          expires: Date.now() + 1000 * 60 * 2,
-        });
-        console.log("signedUrl: ", signedUrl);
-        return res.status(200).json({ success: true, signedUrl: signedUrl });
+        res
+          .status(200)
+          .setHeader("Content-Type", "application/octet-stream")
+          .setHeader(
+            "Content-Disposition",
+            `attachment; filename="${fileName}"`,
+          );
+
+        await pipeStream(createUploadReadStream(filePath), res);
+        return res;
       }
     } catch (error) {
       console.log("error: ", error);

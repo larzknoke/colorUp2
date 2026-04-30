@@ -1,10 +1,14 @@
-import { bucket } from "../../../lib/firebase-admin";
+import { firestore } from "../../../lib/firebase-admin";
 import { withAuth } from "../../../lib/middlewares";
-import { getStorage } from "firebase-admin/storage";
-import { getFirestore } from "firebase-admin/firestore";
 import initAuth from "../../../lib/initAuth";
 import formidable from "formidable";
 import { v4 as uuidv4 } from "uuid";
+import {
+  buildUploadPath,
+  deleteUploadFile,
+  ensureUploadRoot,
+  storeUploadFile,
+} from "../../../lib/local-upload-storage";
 const { readdirSync, rmSync } = require("fs");
 
 export const config = {
@@ -12,7 +16,6 @@ export const config = {
 };
 
 initAuth();
-const firestore = getFirestore();
 
 const handler = async (req, res) => {
   if (req.method == "GET") {
@@ -38,6 +41,7 @@ const handler = async (req, res) => {
     }
   }
   if (req.method == "POST") {
+    await ensureUploadRoot();
     const form = new formidable.IncomingForm({
       uploadDir: "./.tmp",
       keepExtensions: true,
@@ -52,7 +56,13 @@ const handler = async (req, res) => {
     });
 
     form.parse(req, async (err, fields, files) => {
-      const bucket = getStorage().bucket();
+      if (err) {
+        console.log(err);
+        return res
+          .status(500)
+          .json({ success: false, message: "Upload fehlgeschlagen." });
+      }
+
       const filesArr = Object.values(files);
       const uploadGroup = uuidv4();
 
@@ -62,20 +72,22 @@ const handler = async (req, res) => {
             .toLowerCase()
             .split(" ")
             .join("-");
-          return await bucket
-            .upload(file.filepath, {
-              destination: `${req.userId}/${uploadGroup}/${fileName}`,
-            })
-            .then(async (uploadRef) => {
-              readdirSync(".tmp").forEach((f) => rmSync(`${".tmp"}/${f}`)); // empty .tmp folder
-              const fileUrl = uploadRef[0].metadata.mediaLink;
-              const name = uploadRef[0].metadata.name;
+          const filePath = buildUploadPath({
+            userId: req.userId,
+            uploadGroup,
+            fileName,
+          });
+
+          return await storeUploadFile({
+            sourceFilePath: file.filepath,
+            destinationPath: filePath,
+          })
+            .then(async () => {
               const docRef = await firestore.collection("uploads").add({
                 orderId: fields.orderId,
                 note: fields.note,
                 fileName: fileName,
-                filePath: name,
-                fileUrl: fileUrl,
+                filePath: filePath,
                 userID: req.userId,
                 userEmail: req.userEmail,
                 createdAt: Date.now(),
@@ -94,8 +106,11 @@ const handler = async (req, res) => {
               console.log(err);
               return res.status(500).json({ success: false });
             });
-        })
+        }),
       );
+
+      readdirSync(".tmp").forEach((f) => rmSync(`${".tmp"}/${f}`)); // empty .tmp folder
+
       if (uploads.length > 0) {
         const resMail = await fetch(
           `${process.env.NEXT_PUBLIC_BASE_URL}/api/mailer/newUpload`,
@@ -109,7 +124,7 @@ const handler = async (req, res) => {
             }),
             headers: { "Content-Type": "application/json" },
             method: "POST",
-          }
+          },
         );
       }
       return res.status(200).json({ success: true, uploads: uploads });
@@ -124,12 +139,14 @@ const handler = async (req, res) => {
       .where("uploadGroup", "in", groupIds)
       .get();
 
-    snapshot.forEach(async (doc) => {
-      console.log("doc: ", doc.id, doc.data().filePath);
-      // const filePath = doc.data().filePath;
-      // await bucket.file(filePath).delete();
-      await doc.ref.delete();
-    });
+    await Promise.all(
+      snapshot.docs.map(async (doc) => {
+        console.log("doc: ", doc.id, doc.data().filePath);
+        await deleteUploadFile(doc.data().filePath);
+        await doc.ref.delete();
+      }),
+    );
+
     return res.status(200).json({ success: true });
   }
 };

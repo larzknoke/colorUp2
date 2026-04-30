@@ -52,24 +52,7 @@ function UploadTable(uploads) {
   };
 
   const getDownload = (id) => {
-    axios
-      .get(`api/uploads/${id}`, {
-        withCredentials: false,
-      })
-      .then((res) => {
-        if (res.status != 200) {
-          return toast({
-            title: "Ein Fehler ist aufgetreten.",
-            status: "error",
-            duration: 9000,
-            isClosable: true,
-          });
-        }
-        window.open(res.data.signedUrl);
-      })
-      .catch((error) => {
-        console.log(error);
-      });
+    window.open(`api/uploads/${id}`, "_blank");
   };
 
   return (

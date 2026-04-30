@@ -1,8 +1,6 @@
 import { withAuthUser, AuthAction } from "next-firebase-auth";
 import { IconButton, Spinner } from "@chakra-ui/react";
-import React from "react";
 import axios from "axios";
-import grouper from "../utils/grouper";
 import UploadTable from "../components/uploadTable";
 import { useAdminUploads, useUploads } from "../lib/useUploads";
 import { Heading } from "@chakra-ui/react";
@@ -36,13 +34,26 @@ import {
   Checkbox,
   CheckboxGroup,
   Tooltip,
+  Select,
 } from "@chakra-ui/react";
 import { DeleteIcon } from "@chakra-ui/icons";
 
 import UserList from "../components/userList";
 import { useState, useEffect } from "react";
-import _ from "underscore";
 import GroupDownloadButton from "../components/groupDownload";
+
+const groupByKey = (uploads, key) =>
+  uploads.reduce((acc, upload) => {
+    const groupKey =
+      key === "createdAt"
+        ? new Date(upload.createdAt).toLocaleDateString("de-DE")
+        : (upload[key] ?? "Unbekannt");
+    (acc[groupKey] ||= {})[upload.uploadGroup] = [
+      ...(acc[groupKey]?.[upload.uploadGroup] || []),
+      upload,
+    ];
+    return acc;
+  }, {});
 
 function Admin() {
   const { data: dataUploads, mutate: uploadMutate } = useAdminUploads();
@@ -50,7 +61,9 @@ function Admin() {
   const [filteredUploads, setFilteredUploads] = useState([]);
   const [deleteGroup, setDeleteGroup] = useState([]);
   const [query, setQuery] = useState("");
+  const [groupBy, setGroupBy] = useState("createdAt");
   const [importFile, setImportFile] = useState(null);
+  const [cleanupLoading, setCleanupLoading] = useState(false);
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const {
@@ -61,27 +74,19 @@ function Admin() {
 
   useEffect(() => {
     if (dataUploads) {
-      const group = _.groupByMulti(dataUploads?.uploads, [
-        "userEmail",
-        "uploadGroup",
-      ]);
+      const group = groupByKey(dataUploads.uploads, groupBy);
       setGroupedUploads(Object.entries(group));
       filterUploads();
     }
-  }, [dataUploads, query]);
+  }, [dataUploads, query, groupBy]);
 
   const filterUploads = () => {
-    const filteredResult = Object.values(dataUploads.uploads).filter(
-      (upload) => {
-        return Object.keys(upload).some((k) => {
-          return upload[k]
-            .toString()
-            .toLowerCase()
-            .includes(query.toLowerCase());
-        });
-      }
+    const filteredResult = dataUploads.uploads.filter((upload) =>
+      Object.keys(upload).some((k) =>
+        upload[k].toString().toLowerCase().includes(query.toLowerCase()),
+      ),
     );
-    const group = _.groupByMulti(filteredResult, ["userEmail", "uploadGroup"]);
+    const group = groupByKey(filteredResult, groupBy);
     setFilteredUploads(Object.entries(group));
   };
 
@@ -181,24 +186,31 @@ function Admin() {
 
   const getDownload = (e, id) => {
     e.preventDefault();
+    window.open(`api/uploads/${id}`, "_blank");
+  };
+
+  const handleCleanup = () => {
+    setCleanupLoading(true);
     axios
-      .get(`api/uploads/${id}`, {
-        withCredentials: false,
+      .delete("api/uploads/cleanup")
+      .then(({ data }) => {
+        toast({
+          title: `Aufräumen abgeschlossen. ${data.deleted} Upload(s) gelöscht.`,
+          status: "success",
+          duration: 9000,
+          isClosable: true,
+        });
+        uploadMutate();
       })
-      .then((res) => {
-        if (res.status != 200) {
-          return toast({
-            title: "Ein Fehler ist aufgetreten.",
-            status: "error",
-            duration: 9000,
-            isClosable: true,
-          });
-        }
-        window.open(res.data.signedUrl);
+      .catch(() => {
+        toast({
+          title: "Aufräumen fehlgeschlagen.",
+          status: "error",
+          duration: 9000,
+          isClosable: true,
+        });
       })
-      .catch((error) => {
-        console.log(error);
-      });
+      .finally(() => setCleanupLoading(false));
   };
 
   return (
@@ -210,6 +222,22 @@ function Admin() {
 
       <TabPanels>
         <TabPanel>
+          <Tooltip
+            placement="top"
+            label="Uploads älter als 4 Wochen löschen"
+            aria-label="Cleanup Tooltip"
+          >
+            <Button
+              colorScheme="orange"
+              // size="sm"
+              float="right"
+              ml={3}
+              isLoading={cleanupLoading}
+              onClick={handleCleanup}
+            >
+              Aufräumen
+            </Button>
+          </Tooltip>
           {deleteGroup.length > 0 && (
             <Tooltip
               placement="top"
@@ -226,6 +254,16 @@ function Admin() {
               />
             </Tooltip>
           )}
+          <Select
+            w={"250px"}
+            float="right"
+            ml={3}
+            value={groupBy}
+            onChange={(e) => setGroupBy(e.target.value)}
+          >
+            <option value="userEmail">Gruppieren nach Benutzer</option>
+            <option value="createdAt">Gruppieren nach Datum</option>
+          </Select>
           <Input
             placeholder="Suche"
             w={"33%"}
@@ -233,68 +271,91 @@ function Admin() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-          {(query != "" ? filteredUploads : groupedUploads).map((k) => {
-            return (
-              <div key={k}>
-                <Heading size="md" mb={5} mt={12}>
-                  {k[0]}
-                </Heading>
-                <Accordion allowToggle>
-                  {Object.entries(k[1])
-                    .sort((a, b) => b[1][0].createdAt - a[1][0].createdAt)
-                    .map((gk) => {
-                      return (
-                        <div key={gk[0]} data-group={gk[0]}>
-                          <AccordionItem>
-                            <AccordionButton>
-                              <Box as="span" flex="1" textAlign="left">
-                                {gk[1][0].orderId}
-                                <Text as="span" color="gray.600">
-                                  {" :: "}
-                                  {new Date(
-                                    gk[1][0].createdAt
-                                  ).toLocaleDateString()}
-                                </Text>
-                              </Box>
-                              {gk[1].length > 1 ? (
-                                <GroupDownloadButton id={gk[1][0].id} />
-                              ) : (
-                                <Button
-                                  as="span"
-                                  colorScheme="teal"
-                                  size="xs"
+          {(query != "" ? filteredUploads : groupedUploads)
+            .sort((a, b) => {
+              if (groupBy === "createdAt") {
+                return (
+                  new Date(b[0].split(".").reverse().join("-")) -
+                  new Date(a[0].split(".").reverse().join("-"))
+                );
+              }
+              return a[0].localeCompare(b[0]);
+            })
+            .map((k) => {
+              return (
+                <div key={k}>
+                  <Heading size="md" mb={5} mt={12}>
+                    {k[0]}
+                  </Heading>
+                  <Accordion allowToggle>
+                    {Object.entries(k[1])
+                      .sort((a, b) => b[1][0].createdAt - a[1][0].createdAt)
+                      .map((gk) => {
+                        return (
+                          <div key={gk[0]} data-group={gk[0]}>
+                            <AccordionItem>
+                              <AccordionButton>
+                                <Box as="span" flex="1" textAlign="left">
+                                  {gk[1][0].orderId}
+                                  {groupBy !== "createdAt" && (
+                                    <Text as="span" color="gray.600">
+                                      {" :: "}
+                                      {new Date(
+                                        gk[1][0].createdAt,
+                                      ).toLocaleDateString()}
+                                    </Text>
+                                  )}
+                                  {groupBy === "createdAt" && (
+                                    <Text
+                                      as="span"
+                                      color="gray.500"
+                                      ml={2}
+                                      fontSize="sm"
+                                    >
+                                      {":: "}
+                                      {gk[1][0].userEmail}
+                                    </Text>
+                                  )}
+                                </Box>
+                                {gk[1].length > 1 ? (
+                                  <GroupDownloadButton id={gk[1][0].id} />
+                                ) : (
+                                  <Button
+                                    as="span"
+                                    colorScheme="teal"
+                                    size="xs"
+                                    mr={3}
+                                    onClick={(e) => getDownload(e, gk[1][0].id)}
+                                  >
+                                    Download
+                                  </Button>
+                                )}
+                                <Checkbox
+                                  value={gk[0]}
+                                  isChecked={deleteGroup.includes(gk[0])}
+                                  onChange={handleCheckbox}
                                   mr={3}
-                                  onClick={(e) => getDownload(e, gk[1][0].id)}
-                                >
-                                  Download
-                                </Button>
-                              )}
-                              <Checkbox
-                                value={gk[0]}
-                                isChecked={deleteGroup.includes(gk[0])}
-                                onChange={handleCheckbox}
-                                mr={3}
-                                defaultChecked
-                                colorScheme="teal"
-                              ></Checkbox>
-                              <AccordionIcon />
-                            </AccordionButton>
-                            <AccordionPanel
-                              py={5}
-                              bg="gray.700"
-                              my={6}
-                              borderRadius={4}
-                            >
-                              <UploadTable uploads={gk[1]} admin={true} />
-                            </AccordionPanel>
-                          </AccordionItem>
-                        </div>
-                      );
-                    })}
-                </Accordion>
-              </div>
-            );
-          })}
+                                  defaultChecked
+                                  colorScheme="teal"
+                                ></Checkbox>
+                                <AccordionIcon />
+                              </AccordionButton>
+                              <AccordionPanel
+                                py={5}
+                                bg="gray.700"
+                                my={6}
+                                borderRadius={4}
+                              >
+                                <UploadTable uploads={gk[1]} admin={true} />
+                              </AccordionPanel>
+                            </AccordionItem>
+                          </div>
+                        );
+                      })}
+                  </Accordion>
+                </div>
+              );
+            })}
         </TabPanel>
         <TabPanel>
           <UserList />

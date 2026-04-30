@@ -1,16 +1,16 @@
-import _ from "underscore";
-
 const grouper = (x, f) => {
   return x.reduce((a, b, i) => ((a[f(b, i, x)] ||= []).push(b), a), {});
 };
 
-_.groupByMulti = function (obj, values, context) {
+grouper.groupByMulti = function groupByMulti(obj, values) {
   if (!values.length) return obj;
-  var byFirst = _.groupBy(obj, values[0], context),
-    rest = values.slice(1);
-  for (var prop in byFirst) {
-    byFirst[prop] = _.groupByMulti(byFirst[prop], rest, context);
+  const [firstKey, ...rest] = values;
+  const byFirst = grouper(obj, (item) => item[firstKey]);
+
+  for (const prop in byFirst) {
+    byFirst[prop] = groupByMulti(byFirst[prop], rest);
   }
+
   return byFirst;
 };
 
