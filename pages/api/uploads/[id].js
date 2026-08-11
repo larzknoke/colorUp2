@@ -1,6 +1,7 @@
 import { withAuth } from "../../../lib/middlewares";
 import { firestore } from "../../../lib/firebase-admin";
 import JSZip from "jszip";
+import { v4 as uuidv4 } from "uuid";
 import {
   createUploadReadStream,
   deleteUploadFile,
@@ -24,6 +25,25 @@ const handler = async (req, res) => {
       await deleteUploadFile(filePath);
       await docRef.delete();
       return res.status(200).json({ success: true });
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
+  if (req.method === "PATCH" && docRef) {
+    if (!req.admin) {
+      return res
+        .status(403)
+        .json({ error: "Nur Admins dürfen Freigaben erstellen." });
+    }
+
+    try {
+      const existingDoc = (await docRef.get()).data();
+      const shareId = existingDoc?.shareId || uuidv4();
+
+      await docRef.update({ shareId });
+
+      return res.status(200).json({ success: true, shareId });
     } catch (error) {
       return res.status(500).json({ error: error.message });
     }

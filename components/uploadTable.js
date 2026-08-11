@@ -3,7 +3,6 @@ import {
   Table,
   Thead,
   Tbody,
-  Tfoot,
   Tr,
   Th,
   Td,
@@ -11,17 +10,41 @@ import {
   Button,
   Icon,
   Tooltip,
+  HStack,
 } from "@chakra-ui/react";
-import { FaTrashAlt, FaDownload } from "react-icons/fa";
+import { FaTrashAlt, FaDownload, FaLink } from "react-icons/fa";
 import { useToast } from "@chakra-ui/react";
 import axios from "axios";
 import { useUploads, useAdminUploads } from "../lib/useUploads";
 
-function UploadTable(uploads) {
-  const uploadData = [...Object.values(uploads)][0];
+function UploadTable({ uploads, admin = false }) {
+  const uploadData = uploads;
   const toast = useToast();
   const { mutate } = useUploads();
   const { mutate: adminMutate } = useAdminUploads();
+  const [shareLink, setShareLink] = useState("");
+
+  const copyToClipboard = async (text) => {
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-9999px";
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+      return true;
+    } catch (error) {
+      console.error("Clipboard copy failed", error);
+      return false;
+    }
+  };
 
   const handleDelete = (id) => {
     axios
@@ -55,6 +78,52 @@ function UploadTable(uploads) {
     window.open(`api/uploads/${id}`, "_blank");
   };
 
+  const handleCreateShareLink = async (upload) => {
+    try {
+      const res = await axios.patch(
+        `api/uploads/${upload.id}`,
+        {},
+        { withCredentials: true },
+      );
+
+      if (res.status !== 200) {
+        return toast({
+          title: "Ein Fehler ist aufgetreten.",
+          status: "error",
+          duration: 9000,
+          isClosable: true,
+        });
+      }
+
+      const link = `${window.location.origin}/api/uploads/share/${res.data.shareId}`;
+      setShareLink(link);
+      const copied = await copyToClipboard(link);
+      mutate();
+      adminMutate();
+      toast({
+        title: copied
+          ? "Freigabe-Link erstellt und kopiert."
+          : "Freigabe-Link erstellt.",
+        description: (
+          <span style={{ wordBreak: "break-all", whiteSpace: "pre-wrap" }}>
+            {link}
+          </span>
+        ),
+        status: "success",
+        duration: 9000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.log(error);
+      toast({
+        title: "Freigabe-Link konnte nicht erstellt werden.",
+        status: "error",
+        duration: 9000,
+        isClosable: true,
+      });
+    }
+  };
+
   return (
     <TableContainer>
       <Table variant="simple">
@@ -83,30 +152,77 @@ function UploadTable(uploads) {
                     </Td>
                     <Td>{upload.fileName}</Td>
                     <Td>
-                      <Tooltip
-                        placement="top"
-                        label="Datei löschen"
-                        aria-label="Delete Tooltip"
-                      >
-                        <Button
-                          variant={"ghost"}
-                          onClick={() => handleDelete(upload.id)}
+                      <HStack spacing={2} justify="flex-end">
+                        {admin && (
+                          <Tooltip
+                            placement="top"
+                            label={
+                              upload.shareId
+                                ? "Link kopieren"
+                                : "Freigabe-Link erzeugen"
+                            }
+                            aria-label="Share Tooltip"
+                          >
+                            <Button
+                              variant={"ghost"}
+                              onClick={() => {
+                                if (upload.shareId) {
+                                  const link = `${window.location.origin}/api/uploads/share/${upload.shareId}`;
+                                  setShareLink(link);
+                                  copyToClipboard(link).then((copied) => {
+                                    toast({
+                                      title: copied
+                                        ? "Link kopiert."
+                                        : "Link vorbereitet.",
+                                      description: (
+                                        <span
+                                          style={{
+                                            wordBreak: "break-all",
+                                            whiteSpace: "pre-wrap",
+                                          }}
+                                        >
+                                          {link}
+                                        </span>
+                                      ),
+                                      status: "success",
+                                      duration: 9000,
+                                      isClosable: true,
+                                    });
+                                  });
+                                  return;
+                                }
+                                handleCreateShareLink(upload);
+                              }}
+                            >
+                              <Icon as={FaLink} />
+                            </Button>
+                          </Tooltip>
+                        )}
+                        <Tooltip
+                          placement="top"
+                          label="Datei löschen"
+                          aria-label="Delete Tooltip"
                         >
-                          <Icon as={FaTrashAlt} />
-                        </Button>
-                      </Tooltip>
-                      <Tooltip
-                        placement="top"
-                        label="Datei herunterladen"
-                        aria-label="Delete Tooltip"
-                      >
-                        <Button
-                          variant={"ghost"}
-                          onClick={() => getDownload(upload.id)}
+                          <Button
+                            variant={"ghost"}
+                            onClick={() => handleDelete(upload.id)}
+                          >
+                            <Icon as={FaTrashAlt} />
+                          </Button>
+                        </Tooltip>
+                        <Tooltip
+                          placement="top"
+                          label="Datei herunterladen"
+                          aria-label="Delete Tooltip"
                         >
-                          <Icon as={FaDownload} />
-                        </Button>
-                      </Tooltip>
+                          <Button
+                            variant={"ghost"}
+                            onClick={() => getDownload(upload.id)}
+                          >
+                            <Icon as={FaDownload} />
+                          </Button>
+                        </Tooltip>
+                      </HStack>
                     </Td>
                   </Tr>
                 );

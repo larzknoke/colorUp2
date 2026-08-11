@@ -16,6 +16,7 @@ initAuth();
 function Home({ uploads }) {
   const AuthUser = useAuthUser();
   const { data, error, mutate } = useUploads();
+  const isAdmin = AuthUser?.claims?.admin || false;
 
   return (
     <VStack gap={8} align="left">
@@ -27,7 +28,7 @@ function Home({ uploads }) {
         <Heading size="md" mb={5}>
           Ihre letzten Uploads:
         </Heading>
-        <UploadTable uploads={data?.uploads} />
+        <UploadTable uploads={data?.uploads} admin={isAdmin} />
       </Box>
     </VStack>
   );
