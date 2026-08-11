@@ -30,8 +30,17 @@ const handler = async (req, res) => {
       return res.status(404).json({ error: "Freigabe-Link ungültig." });
     }
 
-    const upload = snapshot.docs[0].data();
-    const { filePath, fileName } = upload;
+    const uploadDoc = snapshot.docs[0];
+    const upload = uploadDoc.data();
+    const { filePath, fileName, shareExpiresAt } = upload;
+
+    if (shareExpiresAt && shareExpiresAt <= Date.now()) {
+      await uploadDoc.ref.update({
+        shareId: null,
+        shareExpiresAt: null,
+      });
+      return res.status(410).json({ error: "Freigabe-Link ist abgelaufen." });
+    }
 
     res
       .status(200)

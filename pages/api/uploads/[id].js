@@ -8,6 +8,11 @@ import {
   readUploadFile,
 } from "../../../lib/local-upload-storage";
 
+const SHARE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+const isShareExpired = (shareData) =>
+  Boolean(shareData?.shareExpiresAt && shareData.shareExpiresAt <= Date.now());
+
 const pipeStream = (stream, res) =>
   new Promise((resolve, reject) => {
     stream.on("error", reject);
@@ -39,11 +44,20 @@ const handler = async (req, res) => {
 
     try {
       const existingDoc = (await docRef.get()).data();
-      const shareId = existingDoc?.shareId || uuidv4();
+      const shouldReuseShare =
+        existingDoc?.shareId &&
+        !existingDoc?.shareUsed &&
+        !isShareExpired(existingDoc);
 
-      await docRef.update({ shareId });
+      const shareId = shouldReuseShare ? existingDoc.shareId : uuidv4();
+      const shareExpiresAt = Date.now() + SHARE_TTL_MS;
 
-      return res.status(200).json({ success: true, shareId });
+      await docRef.update({
+        shareId,
+        shareExpiresAt,
+      });
+
+      return res.status(200).json({ success: true, shareId, shareExpiresAt });
     } catch (error) {
       return res.status(500).json({ error: error.message });
     }

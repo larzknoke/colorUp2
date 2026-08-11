@@ -11,6 +11,7 @@ import {
   Icon,
   Tooltip,
   HStack,
+  Text,
 } from "@chakra-ui/react";
 import { FaTrashAlt, FaDownload, FaLink } from "react-icons/fa";
 import { useToast } from "@chakra-ui/react";
@@ -23,6 +24,9 @@ function UploadTable({ uploads, admin = false }) {
   const { mutate } = useUploads();
   const { mutate: adminMutate } = useAdminUploads();
   const [shareLink, setShareLink] = useState("");
+
+  const isShareExpired = (upload) =>
+    Boolean(upload?.shareExpiresAt && upload.shareExpiresAt <= Date.now());
 
   const copyToClipboard = async (text) => {
     try {
@@ -96,19 +100,19 @@ function UploadTable({ uploads, admin = false }) {
       }
 
       const link = `${window.location.origin}/api/uploads/share/${res.data.shareId}`;
+      const expiresAt = res.data.shareExpiresAt;
+      const validUntil = expiresAt
+        ? new Date(expiresAt).toLocaleString()
+        : "unbekannt";
       setShareLink(link);
       const copied = await copyToClipboard(link);
       mutate();
       adminMutate();
       toast({
         title: copied
-          ? "Freigabe-Link erstellt und kopiert."
-          : "Freigabe-Link erstellt.",
-        description: (
-          <span style={{ wordBreak: "break-all", whiteSpace: "pre-wrap" }}>
-            {link}
-          </span>
-        ),
+          ? `Freigabe-Link erstellt und kopiert.\nGültig bis: ${validUntil}`
+          : `Freigabe-Link erstellt.\nGültig bis: ${validUntil}`,
+        description: link,
         status: "success",
         duration: 9000,
         isClosable: true,
@@ -166,24 +170,19 @@ function UploadTable({ uploads, admin = false }) {
                             <Button
                               variant={"ghost"}
                               onClick={() => {
-                                if (upload.shareId) {
+                                if (
+                                  upload.shareId &&
+                                  !upload.shareUsed &&
+                                  !isShareExpired(upload)
+                                ) {
                                   const link = `${window.location.origin}/api/uploads/share/${upload.shareId}`;
                                   setShareLink(link);
                                   copyToClipboard(link).then((copied) => {
                                     toast({
                                       title: copied
-                                        ? "Link kopiert."
-                                        : "Link vorbereitet.",
-                                      description: (
-                                        <span
-                                          style={{
-                                            wordBreak: "break-all",
-                                            whiteSpace: "pre-wrap",
-                                          }}
-                                        >
-                                          {link}
-                                        </span>
-                                      ),
+                                        ? `Link kopiert.\nGültig bis: ${new Date(upload.shareExpiresAt).toLocaleString()}`
+                                        : `Link vorbereitet.\nGültig bis: ${new Date(upload.shareExpiresAt).toLocaleString()}`,
+                                      description: link,
                                       status: "success",
                                       duration: 9000,
                                       isClosable: true,
@@ -197,6 +196,11 @@ function UploadTable({ uploads, admin = false }) {
                               <Icon as={FaLink} />
                             </Button>
                           </Tooltip>
+                        )}
+                        {admin && isShareExpired(upload) && (
+                          <Text as="span" fontSize="sm" color="red.500">
+                            abgelaufen
+                          </Text>
                         )}
                         <Tooltip
                           placement="top"
