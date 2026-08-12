@@ -2,7 +2,8 @@ import { withAuthUser, AuthAction } from "next-firebase-auth";
 import { IconButton, Spinner } from "@chakra-ui/react";
 import axios from "axios";
 import UploadTable from "../components/uploadTable";
-import { useAdminUploads, useUploads } from "../lib/useUploads";
+import { useAdminUploads } from "../lib/useUploads";
+import { useUsers } from "../lib/useUsers";
 import { Heading } from "@chakra-ui/react";
 import {
   Tabs,
@@ -32,7 +33,6 @@ import {
   Code,
   VStack,
   Checkbox,
-  CheckboxGroup,
   Tooltip,
   Select,
 } from "@chakra-ui/react";
@@ -57,11 +57,13 @@ const groupByKey = (uploads, key) =>
 
 function Admin() {
   const { data: dataUploads, mutate: uploadMutate } = useAdminUploads();
+  const { data: dataUsers } = useUsers();
   const [groupedUploads, setGroupedUploads] = useState([]);
   const [filteredUploads, setFilteredUploads] = useState([]);
   const [deleteGroup, setDeleteGroup] = useState([]);
   const [query, setQuery] = useState("");
   const [groupBy, setGroupBy] = useState("createdAt");
+  const [showAdminUploads, setShowAdminUploads] = useState(false);
   const [importFile, setImportFile] = useState(null);
   const [cleanupLoading, setCleanupLoading] = useState(false);
   const toast = useToast();
@@ -72,18 +74,38 @@ function Admin() {
     onClose: onImportClose,
   } = useDisclosure();
 
+  const getVisibleUploads = (uploads = []) => {
+    if (showAdminUploads) return uploads;
+
+    const adminEmailSet = new Set(
+      (dataUsers || [])
+        .filter((user) => user.customClaims?.admin)
+        .map((user) => user.email?.toLowerCase())
+        .filter(Boolean),
+    );
+
+    if (adminEmailSet.size === 0) return uploads;
+
+    return uploads.filter(
+      (upload) => !adminEmailSet.has((upload.userEmail || "").toLowerCase()),
+    );
+  };
+
   useEffect(() => {
     if (dataUploads) {
-      const group = groupByKey(dataUploads.uploads, groupBy);
+      const visibleUploads = getVisibleUploads(dataUploads.uploads || []);
+      const group = groupByKey(visibleUploads, groupBy);
       setGroupedUploads(Object.entries(group));
-      filterUploads();
+      filterUploads(visibleUploads);
     }
-  }, [dataUploads, query, groupBy]);
+  }, [dataUploads, dataUsers, query, groupBy, showAdminUploads]);
 
-  const filterUploads = () => {
-    const filteredResult = dataUploads.uploads.filter((upload) =>
+  const filterUploads = (uploads = dataUploads?.uploads || []) => {
+    const filteredResult = uploads.filter((upload) =>
       Object.keys(upload).some((k) =>
-        upload[k].toString().toLowerCase().includes(query.toLowerCase()),
+        String(upload[k] || "")
+          .toLowerCase()
+          .includes(query.toLowerCase()),
       ),
     );
     const group = groupByKey(filteredResult, groupBy);
@@ -222,55 +244,71 @@ function Admin() {
 
       <TabPanels>
         <TabPanel>
-          <Tooltip
-            placement="top"
-            label="Uploads älter als 4 Wochen löschen"
-            aria-label="Cleanup Tooltip"
-          >
+          <HStack spacing={4} float="right" mt={3}>
+            <Input
+              placeholder="Suche"
+              w={"33%"}
+              float="right"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            {deleteGroup.length > 0 && (
+              <Tooltip
+                placement="top"
+                label="Markierte löschen"
+                aria-label="Delete Tooltip"
+              >
+                <IconButton
+                  icon={<DeleteIcon />}
+                  colorScheme="red"
+                  size={"md"}
+                  float="right"
+                  ml={5}
+                  onClick={handleDeleteGroup}
+                />
+              </Tooltip>
+            )}
+            <Select
+              w={"250px"}
+              float="right"
+              ml={3}
+              value={groupBy}
+              onChange={(e) => setGroupBy(e.target.value)}
+            >
+              <option value="userEmail">Gruppieren nach Benutzer</option>
+              <option value="createdAt">Gruppieren nach Datum</option>
+            </Select>
             <Button
-              colorScheme="orange"
               // size="sm"
               float="right"
               ml={3}
-              isLoading={cleanupLoading}
-              onClick={handleCleanup}
+              colorScheme="blue"
+              variant={showAdminUploads ? "solid" : "outline"}
+              onClick={() => setShowAdminUploads((current) => !current)}
             >
-              Aufräumen
+              {showAdminUploads
+                ? "Admin-Uploads ausblenden"
+                : "Admin-Uploads anzeigen"}
             </Button>
-          </Tooltip>
-          {deleteGroup.length > 0 && (
             <Tooltip
               placement="top"
-              label="Markierte löschen"
-              aria-label="Delete Tooltip"
+              label="Uploads älter als 4 Wochen löschen"
+              aria-label="Cleanup Tooltip"
             >
-              <IconButton
-                icon={<DeleteIcon />}
-                colorScheme="red"
-                size={"md"}
+              <Button
+                colorScheme="orange"
+                // size="sm"
                 float="right"
-                ml={5}
-                onClick={handleDeleteGroup}
-              />
+                ml={3}
+                isLoading={cleanupLoading}
+                onClick={handleCleanup}
+                variant="outline"
+              >
+                Aufräumen
+              </Button>
             </Tooltip>
-          )}
-          <Select
-            w={"250px"}
-            float="right"
-            ml={3}
-            value={groupBy}
-            onChange={(e) => setGroupBy(e.target.value)}
-          >
-            <option value="userEmail">Gruppieren nach Benutzer</option>
-            <option value="createdAt">Gruppieren nach Datum</option>
-          </Select>
-          <Input
-            placeholder="Suche"
-            w={"33%"}
-            float="right"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
+          </HStack>
+
           {(query != "" ? filteredUploads : groupedUploads)
             .sort((a, b) => {
               if (groupBy === "createdAt") {
