@@ -111,7 +111,8 @@ const handler = async (req, res) => {
 
       readdirSync(".tmp").forEach((f) => rmSync(`${".tmp"}/${f}`)); // empty .tmp folder
 
-      if (uploads.length > 0) {
+      // Admin-Uploads lösen keine E-Mail-Benachrichtigung aus.
+      if (uploads.length > 0 && !req.admin) {
         const resMail = await fetch(
           `${process.env.NEXT_PUBLIC_BASE_URL}/api/mailer/newUpload`,
           {

@@ -282,6 +282,7 @@ function Admin() {
               // size="sm"
               float="right"
               ml={3}
+              px={5}
               colorScheme="blue"
               variant={showAdminUploads ? "solid" : "outline"}
               onClick={() => setShowAdminUploads((current) => !current)}
