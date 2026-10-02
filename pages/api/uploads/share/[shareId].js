@@ -1,5 +1,6 @@
 import { firestore } from "../../../../lib/firebase-admin";
 import { createUploadReadStream } from "../../../../lib/local-upload-storage";
+import { createAttachmentHeader } from "../../../../lib/content-disposition";
 
 const pipeStream = (stream, res) =>
   new Promise((resolve, reject) => {
@@ -45,7 +46,7 @@ const handler = async (req, res) => {
     res
       .status(200)
       .setHeader("Content-Type", "application/octet-stream")
-      .setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+      .setHeader("Content-Disposition", createAttachmentHeader(fileName));
 
     await pipeStream(createUploadReadStream(filePath), res);
     return res;

@@ -7,6 +7,7 @@ import {
   deleteUploadFile,
   readUploadFile,
 } from "../../../lib/local-upload-storage";
+import { createAttachmentHeader } from "../../../lib/content-disposition";
 
 const SHARE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -98,7 +99,7 @@ const handler = async (req, res) => {
           .setHeader("Content-Type", "application/zip")
           .setHeader(
             "Content-Disposition",
-            `attachment; filename=${uploadGroup}.zip`,
+            createAttachmentHeader(`${uploadGroup}.zip`),
           )
           .send(content);
       } else {
@@ -107,7 +108,7 @@ const handler = async (req, res) => {
           .setHeader("Content-Type", "application/octet-stream")
           .setHeader(
             "Content-Disposition",
-            `attachment; filename="${fileName}"`,
+            createAttachmentHeader(fileName),
           );
 
         await pipeStream(createUploadReadStream(filePath), res);
