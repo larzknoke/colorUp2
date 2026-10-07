@@ -150,7 +150,15 @@ function UploadTable({ uploads, admin = false }) {
                 return (
                   <Tr key={upload.id} data-group={upload.uploadGroup}>
                     <Td>{upload.orderId}</Td>
-                    <Td>{new Date(upload.createdAt).toLocaleDateString()}</Td>
+                    <Td>
+                      {new Date(upload.createdAt).toLocaleDateString()}
+                      <br />
+                      {new Date(upload.createdAt).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}{" "}
+                      Uhr
+                    </Td>
                     <Td maxWidth={"500px"} whiteSpace={"normal"}>
                       {upload.note}
                     </Td>
