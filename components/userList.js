@@ -43,6 +43,45 @@ function UserList() {
     );
   };
 
+  const deleteUser = async (user) => {
+    const confirmed = window.confirm(
+      `Soll der Benutzer ${user.email} einschließlich aller Uploads gelöscht werden?`,
+    );
+    if (!confirmed) return;
+
+    try {
+      const response = await fetch("api/users/delete", {
+        method: "DELETE",
+        headers: new Headers({
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${cookies.token}`,
+        }),
+        credentials: "same-origin",
+        body: JSON.stringify({ uid: user.uid }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Benutzer konnte nicht gelöscht werden.");
+      }
+
+      mutate();
+      toast({
+        title: "Benutzer und Uploads gelöscht. 👍",
+        status: "success",
+        duration: 9000,
+        isClosable: true,
+      });
+    } catch (error) {
+      toast({
+        title: error.message,
+        status: "error",
+        duration: 9000,
+        isClosable: true,
+      });
+    }
+  };
+
   return (
     <TableContainer>
       <Table variant="simple">
@@ -81,6 +120,19 @@ function UserList() {
                           disabled={user.customClaims?.admin}
                         >
                           <Icon as={FaUserAstronaut} />
+                        </Button>
+                      </Tooltip>
+                      <Tooltip
+                        placement="top"
+                        label="User und Uploads löschen"
+                        aria-label="User löschen Tooltip"
+                      >
+                        <Button
+                          variant={"ghost"}
+                          colorScheme="red"
+                          onClick={() => deleteUser(user)}
+                        >
+                          <Icon as={FaTrashAlt} />
                         </Button>
                       </Tooltip>
                     </Td>

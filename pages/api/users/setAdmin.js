@@ -3,11 +3,20 @@ import { adminAuth } from "../../../lib/firebase-admin";
 
 const handler = async (req, res) => {
   try {
-    const uid = req.body.uid;
-    console.log("req.admin", req.admin);
-    if (req.admin) adminAuth.setCustomUserClaims(uid, { admin: true });
+    if (req.method !== "POST") {
+      return res.status(405).json({ error: "Method not allowed" });
+    }
+    if (!req.admin) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
 
-    res.status(200).json({ success: true });
+    const uid = req.body.uid;
+    if (!uid) {
+      return res.status(400).json({ error: "User ID fehlt." });
+    }
+
+    await adminAuth.setCustomUserClaims(uid, { admin: true });
+    return res.status(200).json({ success: true });
   } catch (error) {
     res.status(401).json({ error });
   }
