@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import {
   FormErrorMessage,
   FormLabel,
@@ -22,6 +22,7 @@ import { FaCloudUploadAlt } from "react-icons/fa";
 import { useUploads } from "../lib/useUploads";
 import { withAuthUser } from "next-firebase-auth";
 import axios from "axios";
+import { useDropzone } from "react-dropzone";
 
 function UploadForm() {
   const { mutate } = useUploads();
@@ -33,15 +34,14 @@ function UploadForm() {
   const [error, setError] = useState(null);
   const [progress, setProgess] = useState(0);
 
-  const inputRef = useRef(null);
-
-  const handleClick = () => {
-    inputRef.current?.click();
-  };
-
-  const changeHandler = (event) => {
-    setSelectedFile(event.target.files);
-  };
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop: (files) => {
+      if (files.length > 0) {
+        setSelectedFile(files);
+        setError(null);
+      }
+    },
+  });
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -69,7 +69,7 @@ function UploadForm() {
         withCredentials: true,
         onUploadProgress: function (progressEvent) {
           setProgess(
-            Math.round((progressEvent.loaded * 100) / progressEvent.total)
+            Math.round((progressEvent.loaded * 100) / progressEvent.total),
           );
         },
       });
@@ -108,18 +108,21 @@ function UploadForm() {
       <form onSubmit={onSubmit}>
         <HStack gap={10} align="center" h="100%">
           <Flex
-            bg={"gray.700"}
+            {...getRootProps({
+              role: "button",
+              "aria-label": "Dateien auswählen oder hier ablegen",
+            })}
+            bg={isDragActive ? "gray.600" : "gray.700"}
             h="100%"
             w="300px"
             borderRadius={3}
             alignItems="center"
-            p={4}
+            p={6}
             _hover={{ bg: "gray.600", cursor: "pointer", gap: "10px" }}
             transition="all 0.2s"
             flexDirection="column"
             justifyContent="center"
             gap={1}
-            onClick={handleClick}
           >
             <Icon as={FaCloudUploadAlt} w={"80px"} h={"80px"} />
             <Text
@@ -133,23 +136,16 @@ function UploadForm() {
                 WebkitBoxOrient: "vertical",
                 display: "-webkit-inline-box",
               }}
+              aria-live="polite"
             >
-              {Array.from(selectedFile).length > 0
-                ? `${selectedFile.length} Dateien: ` +
-                  Array.from(selectedFile)
-                    .map((upload) => upload.name)
-                    .join(", ")
-                : "Datei auswählen..."}
+              {isDragActive
+                ? "Dateien hier ablegen..."
+                : selectedFile.length > 0
+                  ? `${selectedFile.length} Dateien: ` +
+                    selectedFile.map((upload) => upload.name).join(", ")
+                  : "Dateien auswählen oder hierher ziehen..."}
             </Text>
-            <FormControl>
-              <Input
-                display={"none"}
-                onChange={changeHandler}
-                ref={inputRef}
-                type="file"
-                multiple={true}
-              />
-            </FormControl>
+            <input {...getInputProps()} />
           </Flex>{" "}
           <VStack w={"50%"} gap={5}>
             <FormControl>
